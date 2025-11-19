@@ -47,15 +47,15 @@ public class App {
         // Este filtro se ejecuta antes de cada solicitud HTTP.
         before((req, res) -> {
             try {
-                // Abre una conexión a la base de datos utilizando las credenciales del singleton.
+                // 1. Si quedó una conexión abierta de un error anterior, LA CERRAMOS.
+                if (Base.hasConnection()) {
+                    Base.close();
+                }
+                // 2. Ahora abrimos una conexión limpia.
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
-                System.out.println(req.url());
-
             } catch (Exception e) {
-                // Si ocurre un error al abrir la conexión, se registra y se detiene la solicitud
-                // con un código de estado 500 (Internal Server Error) y un mensaje JSON.
-                System.err.println("Error al abrir conexión con ActiveJDBC: " + e.getMessage());
-                halt(500, "{\"error\": \"Error interno del servidor: Fallo al conectar a la base de datos.\"}" + e.getMessage());
+                System.err.println("Error crítico en DB: " + e.getMessage());
+                halt(500, "Error interno de conexión.");
             }
         });
 
@@ -63,11 +63,11 @@ public class App {
         // Este filtro se ejecuta después de que cada solicitud HTTP ha sido procesada.
         after((req, res) -> {
             try {
-                // Cierra la conexión a la base de datos para liberar recursos.
-                Base.close();
+                if (Base.hasConnection()) {
+                    Base.close();
+                }
             } catch (Exception e) {
-                // Si ocurre un error al cerrar la conexión, se registra.
-                System.err.println("Error al cerrar conexión con ActiveJDBC: " + e.getMessage());
+                System.err.println("Error cerrando conexión: " + e.getMessage());
             }
         });
 
@@ -315,65 +315,68 @@ public class App {
         }, new MustacheTemplateEngine());
 
         // POST: Maneja el envío del formulario de creación de nuevo profesor.
-        post("/profesor/new", (req, res) -> {
-        // 1. Obtener datos del formulario
+        post("/profesor/create", (req, res) -> {
+            // 1. Obtener datos del formulario
             String nombre = req.queryParams("nombre");
             String apellido = req.queryParams("apellido");
             String correo = req.queryParams("correo");
             String dni = req.queryParams("dni");
-            String redirectUrl = "/profesor/create"; // URL a la que redirigir en caso de error o éxito
+            String redirectUrl = "/profesor/create";
 
-            // 2. Validaciones (Criterios de Aceptación)
+            // 2. Validaciones
 
             // Validación de campos obligatorios
-        if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() ||
-            correo == null || correo.isEmpty() || dni == null || dni.isEmpty()) {
-
-            res.redirect(redirectUrl + "?error=Todos los campos son obligatorios.");
-            return "";
-        }
-
-            // Validación de formato de correo (simple)
-        if (!correo.contains("@") || !correo.contains(".")) {
-            res.redirect(redirectUrl + "?error=El formato del correo electrónico no es válido.");
-            return "";
-        }
-
-        try {
-            // Validación de duplicados (Correo y DNI)
-            // Usamos ActiveJDBC para buscar en la BD
-            boolean correoExiste = Profesor.findFirst("correo = ?", correo) != null;
-            if (correoExiste) {
-                res.redirect(redirectUrl + "?error=El correo electrónico ya existe en la base de datos.");
+            if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() ||
+                correo == null || correo.isEmpty() || dni == null || dni.isEmpty()) {
+                // CAMBIO AQUÍ: Usamos '+' en lugar de espacios
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
                 return "";
             }
 
-            boolean dniExiste = Profesor.findFirst("dni = ?", dni) != null;
-            if (dniExiste) {
-                res.redirect(redirectUrl + "?error=El DNI ya existe en la base de datos.");
+            // Validación de formato de correo
+            if (!correo.contains("@") || !correo.contains(".")) {
+                // CAMBIO AQUÍ: '+' en lugar de espacios y sin tildes
+                res.redirect(redirectUrl + "?error=El+formato+del+correo+electronico+no+es+valido");
                 return "";
             }
 
-            // 3. Flujo Exitoso: Si todo está OK, guardar.
-            Profesor nuevoProfesor = new Profesor();
+            try {
+                // Validación de duplicados
+                boolean correoExiste = Profesor.findFirst("correo = ?", correo) != null;
+                if (correoExiste) {
+                    // CAMBIO AQUÍ: Mensaje claro con '+'
+                    res.redirect(redirectUrl + "?error=El+correo+electronico+ya+existe+en+la+base+de+datos");
+                    return "";
+                }
+
+                boolean dniExiste = Profesor.findFirst("dni = ?", dni) != null;
+                if (dniExiste) {
+                    // CAMBIO AQUÍ: Mensaje claro con '+'
+                    res.redirect(redirectUrl + "?error=El+DNI+ya+existe+en+la+base+de+datos");
+                    return "";
+                }
+
+                // 3. Flujo Exitoso
+                Profesor nuevoProfesor = new Profesor();
                 nuevoProfesor.setNombre(nombre);
                 nuevoProfesor.setApellido(apellido);
                 nuevoProfesor.setCorreo(correo);
                 nuevoProfesor.setDNI(dni);
 
-                nuevoProfesor.saveIt(); // ¡Aquí ActiveJDBC guarda en la BD!
+                nuevoProfesor.saveIt();
 
-                res.status(201); // 201 Created
-                res.redirect(redirectUrl + "?message=Profesor registrado exitosamente.");
+                res.status(201);
+                // CAMBIO AQUÍ: '+' en lugar de espacios
+                res.redirect(redirectUrl + "?message=Profesor+registrado+exitosamente");
                 return "";
 
             } catch (Exception e) {
-            // 4. Manejo de Errores inesperados
-            System.err.println("Error al registrar al profesor: " + e.getMessage());
-            e.printStackTrace();
-            res.status(500);
-            res.redirect(redirectUrl + "?error=Error interno al guardar. Intente de nuevo.");
-            return "";
+                // 4. Manejo de Errores
+                System.err.println("Error al registrar al profesor: " + e.getMessage());
+                e.printStackTrace();
+                // Quitamos el status 500 para que la redirección funcione bien
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar");
+                return "";
             }
         });
     } // Fin del método main
