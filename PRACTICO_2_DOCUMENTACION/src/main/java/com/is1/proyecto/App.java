@@ -328,14 +328,12 @@ public class App {
             // Validación de campos obligatorios
             if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() ||
                 correo == null || correo.isEmpty() || dni == null || dni.isEmpty()) {
-                // CAMBIO AQUÍ: Usamos '+' en lugar de espacios
                 res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
                 return "";
             }
 
             // Validación de formato de correo
             if (!correo.contains("@") || !correo.contains(".")) {
-                // CAMBIO AQUÍ: '+' en lugar de espacios y sin tildes
                 res.redirect(redirectUrl + "?error=El+formato+del+correo+electronico+no+es+valido");
                 return "";
             }
