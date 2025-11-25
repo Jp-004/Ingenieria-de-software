@@ -344,14 +344,12 @@ public class App {
                 // Validación de duplicados
                 boolean correoExiste = Profesor.findFirst("correo = ?", correo) != null;
                 if (correoExiste) {
-                    // CAMBIO AQUÍ: Mensaje claro con '+'
                     res.redirect(redirectUrl + "?error=El+correo+electronico+ya+existe+en+la+base+de+datos");
                     return "";
                 }
 
                 boolean dniExiste = Profesor.findFirst("dni = ?", dni) != null;
                 if (dniExiste) {
-                    // CAMBIO AQUÍ: Mensaje claro con '+'
                     res.redirect(redirectUrl + "?error=El+DNI+ya+existe+en+la+base+de+datos");
                     return "";
                 }
@@ -366,7 +364,6 @@ public class App {
                 nuevoProfesor.saveIt();
 
                 res.status(201);
-                // CAMBIO AQUÍ: '+' en lugar de espacios
                 res.redirect(redirectUrl + "?message=Profesor+registrado+exitosamente");
                 return "";
 
@@ -374,7 +371,6 @@ public class App {
                 // 4. Manejo de Errores
                 System.err.println("Error al registrar al profesor: " + e.getMessage());
                 e.printStackTrace();
-                // Quitamos el status 500 para que la redirección funcione bien
                 res.redirect(redirectUrl + "?error=Error+interno+al+guardar");
                 return "";
             }

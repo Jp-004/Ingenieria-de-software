@@ -6,9 +6,6 @@ import org.javalite.activejdbc.annotations.Table;
 @Table("profesor") // Esta anotación conecta la clase con la tabla 'profesor' de la BD
 public class Profesor extends Model {
 
-    // ActiveJDBC maneja automáticamente el mapeo de columnas.
-    // Agregamos setters para seguir el estilo de User.java y 
-    // facilitar la creación en el controlador.
 
     public void setNombre(String nombre) {
         set("nombre", nombre);
@@ -26,7 +23,6 @@ public class Profesor extends Model {
         set("dni", dni);
     }
 
-    // También puedes agregar Getters si los necesitas
     public String getNombre() {
         return getString("nombre");
     }
