@@ -4,6 +4,7 @@
 ## 1. (Requirements) Describir su proyecto
 
 * **Problema que se quiere resolver:** * [Escribir aquí el problema que motiva el proyecto...]
+* aaaaaaa
 * **Usuarios del sistema:** * [¿Quiénes van a interactuar con el sistema?...]
 * **Funcionalidades principales:** * [Listar las características clave...]
 * **Restricciones técnicas:** * [Limitaciones de hardware, software, normativas, etc...]
