@@ -25,9 +25,9 @@ Trabucco, Esteban Daniel.
 
 * **Tecnologías elegidas y justificación:** Se hace uso de Java, lenguaje conocido por su robustez en sistemas de gestión, junto con una base de datos relacional para garantizar la integridad de las correlatividades y notas. 
 * **Plazo estimado:** El desarrollo está estructurado para evolucionar a lo largo de 7 prácticas de la asignatura, cubriendo de requerimientos hasta pruebas.
-* **Cambios de alcance ocurridos:** * 
-* **Problemas encontrados:** * [
-* **Forma de organización del equipo:** * Trabajo colaborativo mediante repositorios de GitHub, con una estructura de carpetas definidas para la documentación y el código, asegurando la trazabilidad de los cambios. 
+* **Cambios de alcance ocurridos:**  
+* **Problemas encontrados:** 
+* **Forma de organización del equipo:** Trabajo colaborativo mediante repositorios de GitHub, con una estructura de carpetas definidas para la documentación y el código, asegurando la trazabilidad de los cambios. 
 
 ---
 
