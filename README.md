@@ -3,10 +3,15 @@
 
 ## 1. (Requirements) Describir su proyecto
 
-* **Problema que se quiere resolver:** * [Escribir aquí el problema que motiva el proyecto...]
-* aaaaaaa
-* **Usuarios del sistema:** * [¿Quiénes van a interactuar con el sistema?...]
-* **Funcionalidades principales:** * [Listar las características clave...]
+* **Problema que se quiere resolver: El problema que se quiere resolver es disponer de una herramiento que centralice y organice la información académica. Brindar una plataforma integrada que permita registrar, consultar y registrar datos de alumnos y profesores, gestionar carreras y facilitar el seguimiento académico.
+* **Usuarios del sistema: Oficina de alumnos: gestionar los datos de la institución, carreras, materias, inscripciones y correlatividades
+Estudiantes: pueden consultar su información académica, visualizar notas e inscribirse a materias
+Profesores: acceden para registrar las calificaciones y consultar los listados de los alumnos inscriptos en las materias que dictan
+* **Funcionalidades principales: *
+ **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
+	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
+	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
+	* **Módulo de Comunicación:** Sistema de notificaciones/alertas, foros de noticias y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
 * **Restricciones técnicas:** * [Limitaciones de hardware, software, normativas, etc...]
 * **Tamaño del equipo:** * [Indicar cantidad de integrantes y roles si los hay...]
 * **Tecnologías elegidas y justificación:** * [Ej: Java, SQL, etc. y por qué se eligieron...]
