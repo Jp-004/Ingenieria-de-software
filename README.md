@@ -13,7 +13,7 @@ Profesores: acceden para registrar las calificaciones y consultar los listados d
 	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
 	* **Módulo de Comunicación:** Sistema de notificaciones/alertas, foros de noticias y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
 * **Restricciones técnicas:**
-*  	- Disponibilidad y concurrencia: el sistema tiene que estar disponible en todo momento (24/7) y soportar múltiples accesos simultáneos sin deteriorar el rendimiento.
+  	- Disponibilidad y concurrencia: el sistema tiene que estar disponible en todo momento (24/7) y soportar múltiples accesos simultáneos sin deteriorar el rendimiento.
 	- Seguridad: Autenticación mediante usuarios y contraseña, con un flujo verídico para la recuperación de credenciales.
 	- Usabilidad: Debe contar con una interfaz gráfica amigable e interactiva.
 
@@ -76,7 +76,7 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 
 ### c) Comparación de ambos análisis
 
-* **Riesgos que encontró la IA y el equipo no:
+* **Riesgos que encontró la IA y el equipo no:**
 Riesgos técnicos específicos de arquitectura y lógica.
 Fallas de buenas prácticas.	
 Gestión del proyecto.
@@ -86,6 +86,7 @@ Gestión del proyecto.
 	Priorizar otras materias sobre el proyecto de ingeniería en software II. 
 	Posibilidad de no contar con el hardware necesario.
 	Riesgos más enfocados al contexto universitario.
+
 * **Calidad del análisis:**
 	Fue útil para dar una claridad con respecto a los tipos de riesgo técnicos mientras que nosotros identificamos más riesgos con respecto a lo humano o contexto universitario.
 
