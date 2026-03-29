@@ -1,4 +1,4 @@
-# Ingenieria-de-software
+# Ingenieria-de-software 
 # Proyecto integrador: Especificación, Gestión y planificación
 
 ## 1. (Requirements) Describir su proyecto
@@ -61,14 +61,31 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 
 
 ### b) Riesgos identificados manualmente por el equipo
-* [Listar los riesgos que detectaron ustedes antes de consultar a la IA...]
+| Tipo de Riesgo | Descripción | Probabilidad | Impacto | Identificado por |
+|---|---|---|---|---|
+| **Técnico** | Conocimiento del uso de herramientas necesarias. | Media | Alto | Facundo Maccio |
+| **Planificación** | Disponibilidad horaria de los integrantes. | Alta | Crítico | Juan Cruz Pereno |
+| **Planificación** | Falta de integrantes a futuro. | Baja | Alto | Esteban Trabucco |
+| **Planificación** | Orden de prioridad ante las materias | Alta | Alto | Juan Irusta |
+| **Organizacional** | Incumplimiento de tiempo estimado de trabajo | Media | Crítico | Juan Cruz Pereno |
+| **Técnico** | Carencia de hardware necesario | Baja | Bajo | Juan Irusta |
+| **Humano** | Capacidades técnicas de cada integrante | Media | Alta | Facundo Maccio |
+| **Humano** | Falta de motivación, o carencia de estado de ánimo por problema interpersonal | Medio | Medio | Facundo Maccio | 
+| **Tecnico** | Falta de test | Medio | Alto | Esteban Trabucco |
+
 
 ### c) Comparación de ambos análisis
 
-* **Riesgos que encontró la IA y el equipo no:**
-  * [Detallar aquí...]
+* **Riesgos que encontró la IA y el equipo no:
+Riesgos técnicos específicos de arquitectura y lógica.
+Fallas de buenas prácticas.	
+Gestión del proyecto.
+
 * **Riesgos que encontró el equipo y la IA no:**
-  * [Detallar aquí...]
+	Falta de disponibilidad horaria.
+	Priorizar otras materias sobre el proyecto de ingeniería en software II. 
+	Posibilidad de no contar con el hardware necesario.
+	Riesgos más enfocados al contexto universitario.
 * **Calidad del análisis:**
-  * [¿Fue útil la IA? ¿Alucinó cosas que no tenían sentido para el proyecto?...]
+	Fue útil para dar una claridad con respecto a los tipos de riesgo técnicos mientras que nosotros identificamos más riesgos con respecto a lo humano o contexto universitario.
 
