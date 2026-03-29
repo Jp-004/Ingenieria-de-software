@@ -12,10 +12,19 @@ Profesores: acceden para registrar las calificaciones y consultar los listados d
 	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
 	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
 	* **Módulo de Comunicación:** Sistema de notificaciones/alertas, foros de noticias y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
-* **Restricciones técnicas:** * [Limitaciones de hardware, software, normativas, etc...]
-* **Tamaño del equipo:** * [Indicar cantidad de integrantes y roles si los hay...]
-* **Tecnologías elegidas y justificación:** * [Ej: Java, SQL, etc. y por qué se eligieron...]
-* **Plazo estimado:** * [Tiempo de desarrollo proyectado...]
+* **Restricciones técnicas:**
+  -Disponibilidad y concurrencia: el sistema tiene que estar disponible en todo momento (24/7) y soportar múltiples accesos simultáneos sin deteriorar el rendimiento.
+-Seguridad: Autenticación mediante usuarios y contraseña, con un flujo verídico para la recuperación de credenciales.
+-Usabilidad: Debe contar con una interfaz gráfica amigable e interactiva.
+
+* **Tamaño del equipo:** El equipo cuenta con 4 integrantes. 
+Irusta, Juan Ignacio.
+Maccio, Facundo Damian.
+Pereno, Juan Cruz.
+Trabucco, Esteban Daniel.
+
+* **Tecnologías elegidas y justificación:** Se hace uso de Java, lenguaje conocido por su robustez en sistemas de gestión, junto con una base de datos relacional para garantizar la integridad de las correlatividades y notas. 
+* **Plazo estimado:** El desarrollo está estructurado para evolucionar a lo largo de 7 prácticas de la asignatura, cubriendo de requerimientos hasta pruebas.
 * **Cambios de alcance ocurridos:** * [Registrar aquí si el proyecto se agrandó o achicó en el camino...]
 * **Problemas encontrados:** * [Obstáculos técnicos o de equipo...]
 * **Forma de organización del equipo:** * [Metodología de trabajo, reuniones, distribución de tareas...]
