@@ -8,7 +8,7 @@
 Estudiantes: pueden consultar su información académica, visualizar notas e inscribirse a materias
 Profesores: acceden para registrar las calificaciones y consultar los listados de los alumnos inscriptos en las materias que dictan
 * **Funcionalidades principales:** 
- **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
+	* **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
 	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
 	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
 	* **Módulo de Comunicación:** Sistema de notificaciones/alertas, foros de noticias y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
