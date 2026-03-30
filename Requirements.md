@@ -3,7 +3,7 @@
 
 ## 1. (Requirements) Describir su proyecto
 
-* **Problema que se quiere resolver:** El problema que se quiere resolver es disponer de una herramiento que centralice y organice la información académica. Brindar una plataforma integrada que permita registrar, consultar y registrar datos de alumnos y profesores, gestionar carreras y facilitar el seguimiento académico.
+* **Problema que se quiere resolver:** El problema que se quiere resolver es disponer de una herramienta que centralice y organice la información académica. Brindar una plataforma integrada que permita registrar, consultar y registrar datos de alumnos y profesores, gestionar carreras y facilitar el seguimiento académico.
 * **Usuarios del sistema:** Oficina de alumnos: gestionar los datos de la institución, carreras, materias, inscripciones y correlatividades
 Estudiantes: pueden consultar su información académica, visualizar notas e inscribirse a materias
 Profesores: acceden para registrar las calificaciones y consultar los listados de los alumnos inscriptos en las materias que dictan
