@@ -90,3 +90,73 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 #### Calidad del análisis:
 La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arquitectura, mientras que el análisis manual permitió identificar factores humanos y de contexto universitario que son determinantes para el éxito del proyecto.
 
+
+Diagrama UML:
+classDiagram
+    class Persona {
+        +int dni
+        +char apellido_nombre
+        +char correo
+        +int telefono
+    }
+
+    class Alumno {
+        +int materias_aprobada
+    }
+
+    class Docente {
+        +int periodo
+    }
+
+    class Carrera {
+        +char nombre
+        +char facultad
+    }
+
+    class Materia {
+        +char programa
+        +int codigo
+    }
+
+    class Plan_Estudio {
+        +int correlatividad
+    }
+
+    class Ingreso {
+        <<AssociationClass>>
+        +int año_ingreso
+    }
+
+    class Cursando {
+        <<AssociationClass>>
+        +int nota_final
+        +char estado
+    }
+
+    class Estado {
+        <<enumeration>>
+        Aprobado
+        Regular
+        Libre
+    }
+
+    %% Herencia
+    Persona <|-- Alumno
+    Persona <|-- Docente
+
+    %% Relaciones Alumno
+    Alumno "1" -- "1..*" Carrera : ingreso
+    (Alumno, Carrera) .. Ingreso
+
+    Alumno "1" -- "1..*" Materia : cursando
+    (Alumno, Materia) .. Cursando
+
+    %% Relaciones Docente - Materia
+    Docente "1" -- "1..*" Materia : responsable
+    Docente "1..*" -- "1..*" Materia : jefe_tp
+    Docente "1..*" -- "1..*" Materia : ayudante
+
+    %% Relaciones entre entidades
+    Carrera "1..*" -- "1..*" Materia
+    Materia *-- "1..*" Plan_Estudio
+    Plan_Estudio "1" -- "1..*" Plan_Estudio : correlatividad
