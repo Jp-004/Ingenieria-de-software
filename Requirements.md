@@ -92,71 +92,130 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 
 ```mermaid
 classDiagram
-    class Persona {
-        +int dni
-        +char apellido_nombre
-        +char correo
-        +int telefono
+    class Usuario {
+        +int id
+        +String nombre
+        +String apellido
+        +String email
+        +String password
+        +login()
+        +logout()
+        +recuperarCredenciales()
     }
-
     class Alumno {
-        +int materias_aprobada
+        +String legajo
+        +Date fechaIngreso
+        +String estadoAcademico
+        +consultarNotas()
+        +inscribirseAMateria()
+        +verSituacionAcademica()
     }
-
     class Docente {
-        +int periodo
+        +String legajoDocente
+        +String titulo
+        +registrarCalificacion()
+        +verAlumnosInscriptos()
     }
-
+    class Administrativo {
+        +String sector
+        +gestionarCarrera()
+        +gestionarMateria()
+    }
     class Carrera {
-        +char nombre
-        +char facultad
+        +int id
+        +String nombre
+        +String codigo
+        +int duracionAnios
     }
-
+    class PlanDeEstudio {
+        +int id
+        +int anioVigencia
+        +bool activo
+    }
     class Materia {
-        +char programa
-        +int codigo
+        +int id
+        +String nombre
+        +String codigo
+        +int creditos
+        +agregarCorrelativa()
+    }
+    class Correlatividad {
+        +int id
+        +String tipo
+        +verificar()
+    }
+    class Curso {
+        +int id
+        +String anio
+        +String cuatrimestre
+        +int cupoMaximo
+    }
+    class Inscripcion {
+        +int id
+        +Date fecha
+        +String estado
+        +confirmar()
+        +cancelar()
+    }
+    class Calificacion {
+        +int id
+        +float nota
+        +String tipo
+        +Date fecha
+        +bool aprobado
+        +registrar()
+    }
+    class Notificacion {
+        +int id
+        +String titulo
+        +String contenido
+        +Date fechaEnvio
+        +bool leida
+        +marcarLeida()
+    }
+    class Foro {
+        +int id
+        +String titulo
+        +Date fechaCreacion
+        +publicarMensaje()
+    }
+    class MensajeForo {
+        +int id
+        +String contenido
+        +Date fechaPublicacion
+    }
+    class Chat {
+        +int id
+        +Date fechaCreacion
+        +enviarMensaje()
+    }
+    class MensajeChat {
+        +int id
+        +String contenido
+        +Date fechaEnvio
+        +bool leido
     }
 
-    class Plan_Estudio {
-        +int correlatividad
-    }
+    Usuario  "1..*" PlanDeEstudio : contiene
+    PlanDeEstudio "1" --> "1..*" Materia : incluye
+    Materia "1" --> "0..*" Correlatividad : requiere
+    Correlatividad "0..*" --> "1" Materia : refiere a
 
-    class Ingreso {
-        <<AssociationClass>>
-        +int año_ingreso
-    }
+    Materia "1" --> "0..*" Curso : se ofrece como
+    Docente "1" --> "0..*" Curso : dicta
 
-    class Cursando {
-        <<AssociationClass>>
-        +int nota_final
-        +char estado
-    }
+    Alumno "1" --> "0..*" Inscripcion : realiza
+    Curso "1" --> "0..*" Inscripcion : tiene
 
-    class Estado {
-        <<enumeration>>
-        Aprobado
-        Regular
-        Libre
-    }
+    Inscripcion "1" --> "0..1" Calificacion : genera
 
-    %% Herencia
-    Persona <|-- Alumno
-    Persona <|-- Docente
+    Usuario "1" --> "0..*" Notificacion : recibe
 
-    %% Relaciones Alumno
-    Alumno "1" -- "1.." Carrera : ingreso
-    (Alumno, Carrera) .. Ingreso
+    Curso "1" --> "0..*" Foro : tiene
+    Foro "1" --> "0..*" MensajeForo : contiene
+    Usuario "1" --> "0..*" MensajeForo : publica
 
-    Alumno "1" -- "1.." Materia : cursando
-    (Alumno, Materia) .. Cursando
-
-    %% Relaciones Docente - Materia
-    Docente "1" -- "1.." Materia : responsable
-    Docente "1.." -- "1.." Materia : jefe_tp
-    Docente "1.." -- "1.." Materia : ayudante
-
-    %% Relaciones entre entidades
-    Carrera "1.." -- "1.." Materia
-    Materia-- "1.." Plan_Estudio
-    Plan_Estudio "1" -- "1.." Plan_Estudio : correlatividad
+    Usuario "2..*" -- "0..*" Chat : participa
+    Chat "1" --> "0..*" MensajeChat : contiene
+    Usuario "1" --> "0..*" MensajeChat : envia
 ```
