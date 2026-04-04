@@ -11,7 +11,7 @@
 	* **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
 	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
 	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
-	* **Módulo de Comunicación:** Sistema de notificaciones/alertas, foros de noticias y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
+	* **Módulo de Comunicación:** Sistema de notificaciones/alertas y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
 * **Restricciones técnicas:**
   	- Disponibilidad y concurrencia: el sistema tiene que estar disponible en todo momento (24/7) y soportar múltiples accesos simultáneos sin deteriorar el rendimiento.
 	- Seguridad: Autenticación mediante usuarios y contraseña, con un flujo verídico para la recuperación de credenciales.
@@ -214,10 +214,6 @@ classDiagram
     Inscripcion "1" --> "0..1" Calificacion : genera
 
     Usuario "1" --> "0..*" Notificacion : recibe
-
-    Curso "1" --> "0..*" Foro : tiene
-    Foro "1" --> "0..*" MensajeForo : contiene
-    Usuario "1" --> "0..*" MensajeForo : publica
 
     Usuario "2..*" -- "0..*" Chat : participa
     Chat "1" --> "0..*" MensajeChat : contiene
