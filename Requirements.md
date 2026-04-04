@@ -88,5 +88,5 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 - Riesgos más enfocados al contexto universitario.
 
 #### Calidad del análisis:
-	La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arquitectura, mientras que el análisis manual permitió identificar factores humanos y de contexto universitario que son determinantes para el éxito del proyecto.
+La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arquitectura, mientras que el análisis manual permitió identificar factores humanos y de contexto universitario que son determinantes para el éxito del proyecto.
 
