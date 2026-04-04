@@ -90,3 +90,74 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 #### Calidad del análisis:
 La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arquitectura, mientras que el análisis manual permitió identificar factores humanos y de contexto universitario que son determinantes para el éxito del proyecto.
 
+```mermaid
+classDiagram
+    class Persona {
+        +int dni
+        +String apellido_nombre
+        +String correo
+        +int telefono
+    }
+
+    class Alumno {
+        +int materias_aprobada
+    }
+
+    class Docente {
+        +int periodo
+    }
+
+    class Carrera {
+        +String nombre
+        +String facultad
+    }
+
+    class Materia {
+        +String programa
+        +int codigo
+    }
+
+    class Plan_Estudio {
+        +int correlatividad
+    }
+
+    class Ingreso {
+        <<AssociationClass>>
+        +int año_ingreso
+    }
+
+    class Cursando {
+        <<AssociationClass>>
+        +int nota_final
+        +String estado
+    }
+
+    class Estado {
+        <<enumeration>>
+        Aprobado
+        Regular
+        Libre
+    }
+
+    %% Herencia
+    Persona <|-- Alumno
+    Persona <|-- Docente
+
+    %% Relaciones Alumno - Carrera (Adaptado para Mermaid)
+    Alumno "1" -- "1..*" Ingreso : registra
+    Carrera "1" -- "1..*" Ingreso : posee
+
+    %% Relaciones Alumno - Materia (Adaptado para Mermaid)
+    Alumno "1" -- "1..*" Cursando : realiza
+    Materia "1" -- "1..*" Cursando : incluye
+
+    %% Relaciones Docente - Materia
+    Docente "1" -- "1..*" Materia : responsable
+    Docente "1..*" -- "1..*" Materia : jefe_tp
+    Docente "1..*" -- "1..*" Materia : ayudante
+
+    %% Relaciones entre entidades
+    Carrera "1..*" -- "1..*" Materia
+    Materia "1" -- "1..*" Plan_Estudio
+    Plan_Estudio "1" -- "1..*" Plan_Estudio : correlatividad
+```
