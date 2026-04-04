@@ -1,12 +1,12 @@
 # Ingenieria-de-software 
 # Proyecto integrador: Especificación, Gestión y planificación
 
-## 1. (Requirements) Describir su proyecto
+## 1. (Requirements) Descripción del proyecto
 
-* **Problema que se quiere resolver:** El problema a resolver es crear una herramienta que centralice y organice la información académica. Brindar una plataforma integrada que permita registrar, modificar y consultar datos de alumnos, profesores, carreras y de la institución. Esto será con el fin de facilitar el seguimiento académico de cada alumno, y ofrecer una interfaz facil de utilizar para las actividades diarias por parte del personal. 
-* **Usuarios del sistema:** Oficina de alumnos: gestionar los datos de la institución, carreras, materias, inscripciones y correlatividades.
-Estudiantes: consultan su información académica, visualizan notas e inscriben a materias.
-Profesores: registran calificaciones de cada alumno y consultan el listado de alumnos inscriptos en las materias que dictan.
+* **Problema que se quiere resolver:** El objetivo es desarrollar una herramienta que centralice y organice la información académica mediante una plataforma integrada. Esta permitirá registrar, modificar y consultar datos de alumnos, profesores, carreras y de la institución, con el fin de facilitar el seguimiento académico y ofrecer una interfaz intuitiva para las actividades diarias del personal. 
+* **Usuarios del sistema:** Oficina de alumnos: Gestión de datos institucionales, carreras, materias, inscripciones y correlatividades.
+- Estudiantes: Consultan su información académica, visualizan notas e inscriben a materias.
+- Profesores: Registro de calificaciones y consulta de listas de alumnos inscriptos en sus materias.
 * **Funcionalidades principales:** 
 	* **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
 	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
@@ -23,10 +23,10 @@ Maccio, Facundo Damian.
 Pereno, Juan Cruz.
 Trabucco, Esteban Daniel.
 
-* **Tecnologías elegidas y justificación:** Se hace uso de Java, lenguaje conocido por su robustez en sistemas de gestión, junto con una base de datos relacional para garantizar la integridad de las correlatividades y notas. 
-* **Plazo estimado:** El desarrollo está estructurado para evolucionar a lo largo de 7 prácticas de la asignatura, cubriendo de requerimientos hasta pruebas.
-* **Cambios de alcance ocurridos:**  
-* **Problemas encontrados:** 
+* **Tecnologías elegidas y justificación:** Se utilizará Java, lenguaje reconocido por su robustez en sistemas de gestión, junto con una base de datos relacional para garantizar la integridad de las correlatividades y las calificaciones. 
+* **Plazo estimado:** El desarrollo está estructurado para evolucionar a lo largo de 7 entregas prácticas de la asignatura, cubriendo desde la definición de requerimientos hasta las pruebas finales.
+* **Cambios de alcance ocurridos:**  (Pendiente de completar)
+* **Problemas encontrados:** (Pendiente de completar)
 * **Forma de organización del equipo:** Trabajo colaborativo mediante repositorios de GitHub, con una estructura de carpetas definidas para la documentación y el código, asegurando la trazabilidad de los cambios. 
 
 ---
@@ -36,7 +36,7 @@ Trabucco, Esteban Daniel.
 ### a) Riesgos identificados por el LLM
 Prompt: Actúa como un auditor de proyectos de software. A partir de la siguiente descripción Problema que se quiere resolver: El problema que se quiere resolver es disponer de una herramiento que centralice y organice la información académica. Brindar una plataforma integrada que permita registrar, consultar y registrar datos de alumnos y profesores, gestionar carreras y facilitar el seguimiento académico. Clasifícalos por probabilidad e impacto.
 
-Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia artificial generativa junto con el readme.md establecido hasta el momento, para poder comprender el contexto en el cual estamos trabajando. El LLM utilizado por nosotros para realizar la pregunta fue Claude.
+Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia artificial generativa junto con el readme.md establecido hasta el momento, para poder comprender el contexto en el cual estamos trabajando. Para realizar este analisis, se proporcionó el prompt a la inteligencia artificial Claude para contextualizar el trabajo.
 
 | Tipo de Riesgo | Descripción | Probabilidad | Impacto |
 |---|---|---|---|
@@ -77,16 +77,16 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 ### c) Comparación de ambos análisis
 
 * **Riesgos que encontró la IA y el equipo no:**
-Riesgos técnicos específicos de arquitectura y lógica.
-Fallas de buenas prácticas.	
-Gestión del proyecto.
+- Riesgos técnicos específicos de arquitectura y lógica.
+- Fallas de buenas prácticas.	
+- Gestión del proyecto.
 
 * **Riesgos que encontró el equipo y la IA no:**
-	Falta de disponibilidad horaria.
-	Priorizar otras materias sobre el proyecto de ingeniería en software II. 
-	Posibilidad de no contar con el hardware necesario.
-	Riesgos más enfocados al contexto universitario.
+- Falta de disponibilidad horaria.
+- Priorizar otras materias sobre el proyecto de ingeniería en software II. 
+- Posibilidad de no contar con el hardware necesario.
+- Riesgos más enfocados al contexto universitario.
 
 * **Calidad del análisis:**
-	Fue útil para dar una claridad con respecto a los tipos de riesgo técnicos mientras que nosotros identificamos más riesgos con respecto a lo humano o contexto universitario.
+	La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arquitectura, mientras que el análisis manual permitió identificar factores humanos y de contexto universitario que son determinantes para el éxito del proyecto.
 
