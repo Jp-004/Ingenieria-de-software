@@ -11,7 +11,7 @@
 	* **Módulo de Gestión Académica:** Administración de carreras, planes de estudio, materias y sus correlatividades.
 	* **Módulo de Usuarios:** Gestión integral de perfiles (Alumnos, Docentes y Usuarios.
 	* **Seguimiento Estudiantil:** Consulta de notas, listado de alumnos por materia y gestión de la situación académica general del estudiante.
-	* **Módulo de Comunicación:** Sistema de notificaciones/alertas y chat integrado para el intercambio de mensajes entre docentes y estudiantes.
+	* **Módulo de Comunicación:** Sistema de notificaciones/alertas. 
 * **Restricciones técnicas:**
   	- Disponibilidad y concurrencia: el sistema tiene que estar disponible en todo momento (24/7) y soportar múltiples accesos simultáneos sin deteriorar el rendimiento.
 	- Seguridad: Autenticación mediante usuarios y contraseña, con un flujo verídico para la recuperación de credenciales.
@@ -92,6 +92,10 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 
 
 ## 3. Diagrama de Clases. 
+
+**Prompt:** Hacer diagrama de clase del siguiente proyecto teniendo en cuenta el siguiente archivo. El diagrama debe ser hecho en mermaid, para poder agregarlo a nuestro archivo .md. Adjunto: Requeriments.md.
+
+
 ```mermaid
 classDiagram
     class Usuario {
@@ -175,28 +179,7 @@ classDiagram
         +bool leida
         +marcarLeida()
     }
-    class Foro {
-        +int id
-        +String titulo
-        +Date fechaCreacion
-        +publicarMensaje()
-    }
-    class MensajeForo {
-        +int id
-        +String contenido
-        +Date fechaPublicacion
-    }
-    class Chat {
-        +int id
-        +Date fechaCreacion
-        +enviarMensaje()
-    }
-    class MensajeChat {
-        +int id
-        +String contenido
-        +Date fechaEnvio
-        +bool leido
-    }
+
 
     Usuario <|-- Alumno
     Usuario <|-- Docente
@@ -217,7 +200,4 @@ classDiagram
 
     Usuario "1" --> "0..*" Notificacion : recibe
 
-    Usuario "2..*" -- "0..*" Chat : participa
-    Chat "1" --> "0..*" MensajeChat : contiene
-    Usuario "1" --> "0..*" MensajeChat : envia
 ```
