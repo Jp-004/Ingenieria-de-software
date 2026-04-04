@@ -196,12 +196,16 @@ classDiagram
         +bool leido
     }
 
-    Usuario  "1..*" PlanDeEstudio : contiene
+    Usuario <|-- Alumno
+    Usuario <|-- Docente
+    Usuario <|-- Administrativo
+
+    Carrera "1" --> "1..*" PlanDeEstudio : contiene
     PlanDeEstudio "1" --> "1..*" Materia : incluye
     Materia "1" --> "0..*" Correlatividad : requiere
-    Correlatividad "0..*" --> "1" Materia : refiere a
+    Correlatividad "0..*" --> "1" Materia : correlativaRequerida
 
-    Materia "1" --> "0..*" Curso : se ofrece como
+    Materia "1" --> "0..*" Curso : ofrecidaEn
     Docente "1" --> "0..*" Curso : dicta
 
     Alumno "1" --> "0..*" Inscripcion : realiza
