@@ -76,12 +76,12 @@ Pasamos el prompt predispuesto por la consigna a la asistente de inteligencia ar
 
 ### c) Comparación de ambos análisis
 
-* **Riesgos que encontró la IA y el equipo no:**
+#### Riesgos que encontró la IA y el equipo no:
 - Riesgos técnicos específicos de arquitectura y lógica.
 - Fallas de buenas prácticas.	
 - Gestión del proyecto.
 
-* **Riesgos que encontró el equipo y la IA no:**
+#### Riesgos que encontró el equipo y la IA no:
 - Falta de disponibilidad horaria.
 - Priorizar otras materias sobre el proyecto de ingeniería en software II. 
 - Posibilidad de no contar con el hardware necesario.
