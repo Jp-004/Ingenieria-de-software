@@ -94,8 +94,8 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 classDiagram
     class Persona {
         +int dni
-        +String apellido_nombre
-        +String correo
+        +char apellido_nombre
+        +char correo
         +int telefono
     }
 
@@ -108,12 +108,12 @@ classDiagram
     }
 
     class Carrera {
-        +String nombre
-        +String facultad
+        +char nombre
+        +char facultad
     }
 
     class Materia {
-        +String programa
+        +char programa
         +int codigo
     }
 
@@ -129,7 +129,7 @@ classDiagram
     class Cursando {
         <<AssociationClass>>
         +int nota_final
-        +String estado
+        +char estado
     }
 
     class Estado {
@@ -143,21 +143,20 @@ classDiagram
     Persona <|-- Alumno
     Persona <|-- Docente
 
-    %% Relaciones Alumno - Carrera (Adaptado para Mermaid)
-    Alumno "1" -- "1..*" Ingreso : registra
-    Carrera "1" -- "1..*" Ingreso : posee
+    %% Relaciones Alumno
+    Alumno "1" -- "1.." Carrera : ingreso
+    (Alumno, Carrera) .. Ingreso
 
-    %% Relaciones Alumno - Materia (Adaptado para Mermaid)
-    Alumno "1" -- "1..*" Cursando : realiza
-    Materia "1" -- "1..*" Cursando : incluye
+    Alumno "1" -- "1.." Materia : cursando
+    (Alumno, Materia) .. Cursando
 
     %% Relaciones Docente - Materia
-    Docente "1" -- "1..*" Materia : responsable
-    Docente "1..*" -- "1..*" Materia : jefe_tp
-    Docente "1..*" -- "1..*" Materia : ayudante
+    Docente "1" -- "1.." Materia : responsable
+    Docente "1.." -- "1.." Materia : jefe_tp
+    Docente "1.." -- "1.." Materia : ayudante
 
     %% Relaciones entre entidades
-    Carrera "1..*" -- "1..*" Materia
-    Materia "1" -- "1..*" Plan_Estudio
-    Plan_Estudio "1" -- "1..*" Plan_Estudio : correlatividad
+    Carrera "1.." -- "1.." Materia
+    Materia-- "1.." Plan_Estudio
+    Plan_Estudio "1" -- "1.." Plan_Estudio : correlatividad
 ```
