@@ -145,7 +145,6 @@ classDiagram
         +int id
         +String nombre
         +String codigo
-        +int creditos
     }
 
     class Comision {
