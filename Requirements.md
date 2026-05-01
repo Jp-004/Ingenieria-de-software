@@ -188,8 +188,8 @@ classDiagram
     Materia "1" --> "0..*" Comisión : ofrecidaEn
     Docente "1" --> "0..*" Comisión : dicta
 
-    Alumno "0..*" -- "0..*" Comisión
-    (Alumno, Comisión) .. Inscripcion
+    Alumno "1" -- "0..*" Inscripcion
+    Inscripcion "0..*" -- "1" Comision
 
     Inscripcion "1" --> "0..1" Calificacion : genera
 
