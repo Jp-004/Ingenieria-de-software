@@ -99,6 +99,7 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 ```mermaid
 classDiagram
     class Usuario {
+        <<abstract>>
         +int id
         +String nombre
         +String apellido
@@ -107,6 +108,7 @@ classDiagram
         +login()
         +logout()
     }
+
     class Alumno {
         +String legajo
         +Date fechaIngreso
@@ -114,48 +116,68 @@ classDiagram
         +inscribirseAMateria()
         +verSituacionAcademica()
     }
+
     class Docente {
         +String legajoDocente
         +String titulo
         +registrarCalificacion()
     }
+
     class Administrativo {
         +String sector
         +gestionarCarrera()
-        +gestionarMateria()
+        +gestionarMesaExamen()
     }
+
     class Carrera {
         +int id
         +String nombre
         +String codigo
     }
+
     class PlanDeEstudio {
         +int id
         +int anioVigencia
         +boolean activo
     }
+
     class Materia {
         +int id
         +String nombre
         +String codigo
+        +int creditos
     }
+
     class Comision {
         +int id
         +String anio
         +String cuatrimestre
         +int cupoMaximo
     }
+
     class Inscripcion {
         +int id
         +Date fecha
         +String estado
+        +float notaFinalCursada
     }
+
     class Calificacion {
         +int id
         +float nota
         +String tipo
+        +Date fecha
         +boolean aprobado
     }
+
+    class MesaExamen {
+        +int id
+        +Date fecha
+        +String turno
+        +String libro
+        +String folio
+    }
+
     class Notificacion {
         +int id
         +String titulo
@@ -168,17 +190,20 @@ classDiagram
     Usuario <|-- Docente
     Usuario <|-- Administrativo
 
-    Carrera "1" -- "0..*" Alumno : pertenece
     Carrera "1" *-- "1..*" PlanDeEstudio : posee
-    PlanDeEstudio "1" o-- "1..*" Materia : conforma
+    PlanDeEstudio "1" o-- "1..*" Materia : incluye
     Materia "1" -- "0..*" Materia : correlativa
+    Carrera "1" -- "0..*" Alumno : pertenece
 
     Materia "1" -- "0..*" Comision : seDictaEn
     Docente "1..*" -- "0..*" Comision : dicta
-
     Alumno "1" -- "0..*" Inscripcion : realiza
     Comision "1" -- "0..*" Inscripcion : contiene
-    Inscripcion "1" -- "0..*" Calificacion : registra
-    Usuario "1" -- "0..*" Notificacion : recibe
+    Inscripcion "1" -- "0..*" Calificacion : tiene_parciales
 
+    Materia "1" -- "0..*" MesaExamen : tiene
+    MesaExamen "1" -- "0..*" Calificacion : genera
+    Alumno "1" -- "0..*" Calificacion : obtiene
+
+    Usuario "1" -- "0..*" Notificacion : recibe
 ```
