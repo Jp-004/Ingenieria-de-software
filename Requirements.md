@@ -99,100 +99,86 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 ```mermaid
 classDiagram
     class Usuario {
-        +int : id
-        +string : nombre
-        +String : apellido
-        +String : email
-        +String : password
+        +int id
+        +String nombre
+        +String apellido
+        +String email
+        +String password
         +login()
         +logout()
-        +recuperarCredenciales()
     }
     class Alumno {
-        +string : legajo
-        +date : fechaIngreso
-        +string : estadoAcademico
-        +consultarNotas()
+        +String legajo
+        +Date fechaIngreso
+        +String estadoAcademico
         +inscribirseAMateria()
         +verSituacionAcademica()
     }
     class Docente {
-        +string : legajoDocente
-        +string : titulo
+        +String legajoDocente
+        +String titulo
         +registrarCalificacion()
-        +verAlumnosInscriptos()
     }
     class Administrativo {
-        +string : sector
+        +String sector
         +gestionarCarrera()
         +gestionarMateria()
     }
     class Carrera {
-        +int : id
-        +string : nombre
-        +string : codigo
-        +int duracionAnios
+        +int id
+        +String nombre
+        +String codigo
     }
     class PlanDeEstudio {
-        +int : id
-        +int : anioVigencia
-        +bool : activo
-        +agregarCorrelativa()
+        +int id
+        +int anioVigencia
+        +boolean activo
     }
     class Materia {
-        +int : id
-        +string : nombre
-        +string : codigo
-        +int : creditos
+        +int id
+        +String nombre
+        +String codigo
     }
-
-    class Comisión {
-        +int : id
-        +string : anio
-        +string : cuatrimestre
-        +int : cupoMaximo
+    class Comision {
+        +int id
+        +String anio
+        +String cuatrimestre
+        +int cupoMaximo
     }
     class Inscripcion {
-        +int : id
-        +date : fecha
-        +string : estado
-        +confirmar()
-        +cancelar()
+        +int id
+        +Date fecha
+        +String estado
     }
     class Calificacion {
-        +int : id
-        +float : nota
-        +string : tipo
-        +date : fecha
-        +bool : aprobado
-        +registrar()
+        +int id
+        +float nota
+        +String tipo
+        +boolean aprobado
     }
     class Notificacion {
-        +int : id
-        +string : titulo
-        +string : contenido
-        +eate : fechaEnvio
-        +bool : leida
-        +marcarLeida()
+        +int id
+        +String titulo
+        +String contenido
+        +Date fechaEnvio
+        +boolean leida
     }
-
 
     Usuario <|-- Alumno
     Usuario <|-- Docente
     Usuario <|-- Administrativo
 
-    Carrera "1" --> "1..*" PlanDeEstudio : contiene
-    PlanDeEstudio "1" --> "1..*" Materia : incluye
-    Materia "1" --> "0..*" Materia : correlatividad
+    Carrera "1" -- "0..*" Alumno : pertenece
+    Carrera "1" *-- "1..*" PlanDeEstudio : posee
+    PlanDeEstudio "1" o-- "1..*" Materia : conforma
+    Materia "1" -- "0..*" Materia : correlativa
 
-    Materia "1" --> "0..*" Comisión : ofrecidaEn
-    Docente "1" --> "0..*" Comisión : dicta
+    Materia "1" -- "0..*" Comision : seDictaEn
+    Docente "1..*" -- "0..*" Comision : dicta
 
-    Alumno "1" -- "0..*" Inscripcion
-    Inscripcion "0..*" -- "1" Comision
-
-    Inscripcion "1" --> "0..1" Calificacion : genera
-
-    Usuario "1" --> "0..*" Notificacion : recibe
+    Alumno "1" -- "0..*" Inscripcion : realiza
+    Comision "1" -- "0..*" Inscripcion : contiene
+    Inscripcion "1" -- "0..*" Calificacion : registra
+    Usuario "1" -- "0..*" Notificacion : recibe
 
 ```
