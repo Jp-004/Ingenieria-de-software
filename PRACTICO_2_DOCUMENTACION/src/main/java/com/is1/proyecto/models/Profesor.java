@@ -6,7 +6,6 @@ import org.javalite.activejdbc.annotations.Table;
 @Table("profesor") // Esta anotación conecta la clase con la tabla 'profesor' de la BD
 public class Profesor extends Model {
 
-
     public void setNombre(String nombre) {
         set("nombre", nombre);
     }
@@ -30,7 +29,7 @@ public class Profesor extends Model {
     public String getApellido() {
         return getString("apellido");
     }
-    
+
     public String getCorreo() {
         return getString("correo");
     }

@@ -5,12 +5,24 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- Clave primaria autoincremental para SQLite
     name TEXT NOT NULL UNIQUE,          -- Nombre de usuario (TEXT es el tipo de cadena recomendado para SQLite), con restricción UNIQUE
-    password TEXT NOT NULL           -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+    password TEXT NOT NULL,          -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+    rango TEXT NOT NULL              -- Rango del usuario    
+    CONSTRAINT CHK_rango CHECK (rango IN ('Admin', 'Profesor', 'Alumno'))
 );
 
 DROP TABLE IF EXISTS profesor;
 
 CREATE TABLE profesor (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    correo VARCHAR(100) NOT NULL UNIQUE,
+    dni VARCHAR(20) NOT NULL UNIQUE
+);
+
+DROP TABLE IF EXISTS alumno;
+
+CREATE TABLE alumno (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
