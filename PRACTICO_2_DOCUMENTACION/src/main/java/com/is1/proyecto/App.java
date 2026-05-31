@@ -188,7 +188,7 @@ public class App {
                 return ""; // Retorna una cadena vacía ya que la respuesta ya fue redirigida.
             }
 
-            if (codigoAdmin == null || !codigoAdmin.equals("ADMIN2026")){
+            if (codigoAdmin == null || !codigoAdmin.equals("ADMIN2026")) {
                 res.redirect("/user/create?error=Codigo de administrador incorrecto.");
                 return "";
             }
@@ -206,7 +206,8 @@ public class App {
 
                 res.status(201); // Código de estado HTTP 201 (Created) para una creación exitosa.
                 // Redirige al formulario de creación con un mensaje de éxito.
-                res.redirect("/?message=Cuenta creada exitosamente para " + name + ". Ya puede iniciar sesion.");                return ""; // Retorna una cadena vacía.
+                res.redirect("/?message=Cuenta creada exitosamente para " + name + ". Ya puede iniciar sesion.");
+                return ""; // Retorna una cadena vacía.
 
             } catch (Exception e) {
                 // Si ocurre cualquier error durante la operación de DB (ej. nombre de usuario
@@ -269,10 +270,10 @@ public class App {
                 } else if ("Alumno".equals(rango)) {
                     return new ModelAndView(model, "dashboard_alumno.mustache");
                 } else {
-                    model.put ("errorMessage", "Rango de usuario no reconocido.");
+                    model.put("errorMessage", "Rango de usuario no reconocido.");
                     return new ModelAndView(model, "login.mustache");
                 }
-            } else{
+            } else {
                 // Contrasenia incorrecta
                 res.status(401);
                 model.put("errorMessage", "Usuario o contraseña incorrectos.");
@@ -381,16 +382,22 @@ public class App {
                 }
 
                 // 3. Flujo Exitoso
+
+                int legajo = Alumno.count().intValue() + 1;
+                String fechaIngreso = java.time.LocalDate.now().toString();
+
                 Alumno nuevoAlumno = new Alumno();
                 nuevoAlumno.setNombre(nombre);
                 nuevoAlumno.setApellido(apellido);
                 nuevoAlumno.setCorreo(correo);
                 nuevoAlumno.setDNI(dni);
-
+                nuevoAlumno.setLegajo(legajo);
+                nuevoAlumno.setFechaIngreso(fechaIngreso);
+                nuevoAlumno.setEstadoAcademico("Activo");
                 nuevoAlumno.saveIt();
 
                 User nuevoUser = new User();
-                nuevoUser.setName(correo);  // correo como usuario
+                nuevoUser.setName(correo); // correo como usuario
                 nuevoUser.setPassword(BCrypt.hashpw(dni, BCrypt.gensalt())); // DNI como contraseña
                 nuevoUser.setRango("Alumno");
                 nuevoUser.saveIt();
