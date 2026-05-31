@@ -23,4 +23,12 @@ public class User extends Model {
         set("password", password); // Establece el valor para la columna 'password'
     }
 
+    public String getRango() {
+    return getString("rango");
+}
+
+    public void setRango(String rango) {
+        set("rango", rango);
+    }
+
 }

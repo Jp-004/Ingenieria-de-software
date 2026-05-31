@@ -178,6 +178,7 @@ public class App {
         post("/user/new", (req, res) -> {
             String name = req.queryParams("name");
             String password = req.queryParams("password");
+            String codigoAdmin = req.queryParams("codigoAdmin");
 
             // Validaciones básicas: campos no pueden ser nulos o vacíos.
             if (name == null || name.isEmpty() || password == null || password.isEmpty()) {
@@ -185,6 +186,11 @@ public class App {
                 // Redirige al formulario de creación con un mensaje de error.
                 res.redirect("/user/create?error=Nombre y contraseña son requeridos.");
                 return ""; // Retorna una cadena vacía ya que la respuesta ya fue redirigida.
+            }
+
+            if (codigoAdmin == null || !codigoAdmin.equals("ADMIN2026")){
+                res.redirect("/user/create?error=Codigo de administrador incorrecto.");
+                return "";
             }
 
             try {
@@ -195,13 +201,12 @@ public class App {
 
                 ac.set("name", name); // Asigna el nombre de usuario.
                 ac.set("password", hashedPassword); // Asigna la contraseña hasheada.
-                ac.set("rango", "Alumno");
+                ac.set("rango", "Admin");
                 ac.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Código de estado HTTP 201 (Created) para una creación exitosa.
                 // Redirige al formulario de creación con un mensaje de éxito.
-                res.redirect("/user/create?message=Cuenta creada exitosamente para " + name + "!");
-                return ""; // Retorna una cadena vacía.
+                res.redirect("/?message=Cuenta creada exitosamente para " + name + ". Ya puede iniciar sesion.");                return ""; // Retorna una cadena vacía.
 
             } catch (Exception e) {
                 // Si ocurre cualquier error durante la operación de DB (ej. nombre de usuario
@@ -248,28 +253,30 @@ public class App {
             // BCrypt.checkpw hashea la plainTextPassword con el salt de
             // storedHashedPassword y compara.
             if (BCrypt.checkpw(plainTextPassword, storedHashedPassword)) {
-                // Autenticación exitosa.
-                res.status(200); // OK.
+                res.status(200);
+                req.session(true).attribute("currentUserUsername", username);
+                req.session().attribute("userId", ac.getId());
+                req.session().attribute("loggedIn", true);
+                req.session().attribute("rango", ac.getRango()); // ← nuevo
 
-                // --- Gestión de Sesión ---
-                req.session(true).attribute("currentUserUsername", username); // Guarda el nombre de usuario en la
-                                                                              // sesión.
-                req.session().attribute("userId", ac.getId()); // Guarda el ID de la cuenta en la sesión (útil).
-                req.session().attribute("loggedIn", true); // Establece una bandera para indicar que el usuario está
-                                                           // logueado.
+                String rango = ac.getRango();
+                model.put("username", username);
 
-                System.out.println("DEBUG: Login exitoso para la cuenta: " + username);
-                System.out.println("DEBUG: ID de Sesión: " + req.session().id());
-
-                model.put("username", username); // Añade el nombre de usuario al modelo para el dashboard.
-                // Renderiza la plantilla del dashboard tras un login exitoso.
-                return new ModelAndView(model, "dashboard.mustache");
-            } else {
-                // Contraseña incorrecta.
-                res.status(401); // Unauthorized.
-                System.out.println("DEBUG: Intento de login fallido para: " + username);
-                model.put("errorMessage", "Usuario o contraseña incorrectos."); // Mensaje genérico por seguridad.
-                return new ModelAndView(model, "login.mustache"); // Renderiza la plantilla de login con error.
+                if ("Admin".equals(rango)) {
+                    return new ModelAndView(model, "dashboard.mustache");
+                } else if ("Profesor".equals(rango)) {
+                    return new ModelAndView(model, "dashboard_profesor.mustache");
+                } else if ("Alumno".equals(rango)) {
+                    return new ModelAndView(model, "dashboard_alumno.mustache");
+                } else {
+                    model.put ("errorMessage", "Rango de usuario no reconocido.");
+                    return new ModelAndView(model, "login.mustache");
+                }
+            } else{
+                // Contrasenia incorrecta
+                res.status(401);
+                model.put("errorMessage", "Usuario o contraseña incorrectos.");
+                return new ModelAndView(model, "login.mustache");
             }
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta POST.
 
@@ -382,6 +389,12 @@ public class App {
 
                 nuevoAlumno.saveIt();
 
+                User nuevoUser = new User();
+                nuevoUser.setName(correo);  // correo como usuario
+                nuevoUser.setPassword(BCrypt.hashpw(dni, BCrypt.gensalt())); // DNI como contraseña
+                nuevoUser.setRango("Alumno");
+                nuevoUser.saveIt();
+
                 res.status(201);
                 res.redirect(redirectUrl + "?message=Alumno+registrado+exitosamente");
                 return "";
@@ -460,6 +473,12 @@ public class App {
                 nuevoProfesor.setDNI(dni);
 
                 nuevoProfesor.saveIt();
+
+                User nuevoUser = new User();
+                nuevoUser.setName(correo);
+                nuevoUser.setPassword(BCrypt.hashpw(dni, BCrypt.gensalt()));
+                nuevoUser.setRango("Profesor");
+                nuevoUser.saveIt();
 
                 res.status(201);
                 res.redirect(redirectUrl + "?message=Profesor+registrado+exitosamente");
