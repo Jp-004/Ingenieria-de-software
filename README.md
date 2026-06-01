@@ -32,5 +32,5 @@ Puedes iniciar el proyecto haciendo **doble clic** en los archivos `.bat` desde 
 
 Abre una terminal en la carpeta raíz del proyecto y ejecuta los scripts `.sh`. 
 
-* **Iniciar el servidor (Mantiene los datos): ./iniciar.sh
-* **Reiniciar el servidor (Mantiene los datos): ./reiniciar.sh
+* **Iniciar el servidor` (Mantiene los datos): ./iniciar.sh
+* **Reiniciar el servidor` (Borra los datos): ./reiniciar.sh
