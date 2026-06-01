@@ -124,22 +124,27 @@ classDiagram
     class Docente {
         +String legajoDocente
         +String titulo
-        +registrarNotaParcial()
+        +registrarNotaParcial() 
 		+registrarNotaFinal()
 		+agregarFechaParcial()
 		+agregarFechaFinal()
     }
 
-    class Administrativo {
-        +String sector
+    class Administrativo()
         +registroProfesor()
         +registroAlumno()
 		+crearCarrera()
+		+modificarCarrera()
+		+eliminarCarrera()
 		+crearMateria()
+		+modificarMateria()
 		+eliminarMateria()
 		+asignarProfesor()
+		+darDeBajaProfesor()
 		+asignarCodigo()
 		+mesaDeExamen()
+		+crearPlanDeEstudio()
+		+eliminarPlanDeEstudio()		
     }
 
     class Carrera {
