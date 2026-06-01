@@ -499,5 +499,80 @@ public class App {
                 return "";
             }
         });
+
+        // ==================== GESTIÓN CENTRAL DE CARRERAS ====================
+        get("/gestion/carreras", (req, res) -> {
+            // Verificamos que esté logueado (opcional, pero recomendado igual que en /dashboard)
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/login?error=Debes iniciar sesión.");
+                return null;
+            }
+            
+            return new ModelAndView(new HashMap<>(), "gestion_carreras.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== CARRERA - LISTAR ====================
+        get("/carrera/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
+            model.put("carreras", carreras);
+    
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+    
+            return new ModelAndView(model, "carrera_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== PLAN - LISTAR ====================
+        get("/plan/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+    
+            // Enriquecer con nombre de carrera
+            for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
+                com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
+                if (carrera != null) {
+                    plan.set("carrera_nombre", carrera.getNombre());
+                }
+            }   
+    
+            model.put("planes", planes);
+    
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+    
+            return new ModelAndView(model, "plan_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== MATERIA - LISTAR ====================
+        get("/materia/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.Materia> materias = com.is1.proyecto.models.Materia.findAll();
+    
+            // Enriquecer con nombre del plan
+            for (com.is1.proyecto.models.Materia materia : materias) {
+                int planId = materia.getPlanDeEstudioId();
+                if (planId > 0) {
+                    com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
+                    if (plan != null) {
+                        materia.set("plan_de_estudio_nombre", "Plan " + plan.getAnioVigencia());
+                    }
+                }
+            }
+    
+            model.put("materias", materias);
+    
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+    
+            return new ModelAndView(model, "materia_list.mustache");
+        }, new MustacheTemplateEngine());
     } // Fin del método main
 } // Fin de la clase App
