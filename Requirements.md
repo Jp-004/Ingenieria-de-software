@@ -114,52 +114,58 @@ classDiagram
         +Date fechaIngreso
         +String estadoAcademico
         +inscribirseAMateria()
-        +verSituacionAcademica()
+		+inscribiseARendir()
+		+eliminarInscripcion()
+        +verMateriasAprobadas()
+		+verMateriasCursando()
+		+consultarNotasParciales()
     }
 
     class Docente {
         +String legajoDocente
         +String titulo
-        +registrarCalificacion()
+        +registrarNotaParcial()
+		+registrarNotaFinal()
+		+agregarFechaParcial()
+		+agregarFechaFinal()
     }
 
     class Administrativo {
         +String sector
-        +gestionarCarrera()
-        +gestionarMesaExamen()
+        +registroProfesor()
+        +registroAlumno()
+		+crearCarrera()
+		+crearMateria()
+		+eliminarMateria()
+		+asignarProfesor()
+		+asignarCodigo()
+		+mesaDeExamen()
     }
 
     class Carrera {
         +int id
         +String nombre
         +String codigo
+		+agregarPlanDeEstudio()
     }
 
     class PlanDeEstudio {
         +int id
         +int anioVigencia
         +boolean activo
+		+agregarMateria()
+		+agregarCorrelativas()
+		+agregarHoras()
     }
 
     class Materia {
         +int id
         +String nombre
         +String codigo
+		+verAlumnosInscriptosAMateria()
+		+verHorasYCodigoMateria()
     }
 
-    class Comision {
-        +int id
-        +String anio
-        +String cuatrimestre
-        +int cupoMaximo
-    }
-
-    class Inscripcion {
-        +int id
-        +Date fecha
-        +String estado
-        +float notaFinalCursada
-    }
 
     class Calificacion {
         +int id
@@ -171,19 +177,11 @@ classDiagram
 
     class MesaExamen {
         +int id
-        +Date fecha
-        +String turno
-        +String libro
-        +String folio
+        +Date fechaApertura
+		+Date fechaClausura
+        +String llamado
     }
 
-    class Notificacion {
-        +int id
-        +String titulo
-        +String contenido
-        +Date fechaEnvio
-        +boolean leida
-    }
 
     Usuario <|-- Alumno
     Usuario <|-- Docente
@@ -193,16 +191,13 @@ classDiagram
     PlanDeEstudio "1" o-- "1..*" Materia : incluye
     Materia "1" -- "0..*" Materia : correlativa
     Carrera "1" -- "0..*" Alumno : pertenece
-
-    Materia "1" -- "0..*" Comision : seDictaEn
-    Docente "1..*" -- "0..*" Comision : dicta
-    Alumno "1" -- "0..*" Inscripcion : realiza
-    Comision "1" -- "0..*" Inscripcion : contiene
-    Inscripcion "1" -- "0..*" Calificacion : tiene_parciales
+	Docente "1..*" -- "0..*" Materia : posee
+	Alumno "1" -- "0..*" Materia : posee
+	Materia "1" -- "1..*" Calificacion : tiene
+	
+	
 
     Materia "1" -- "0..*" MesaExamen : tiene
     MesaExamen "1" -- "0..*" Calificacion : genera
     Alumno "1" -- "0..*" Calificacion : obtiene
-
-    Usuario "1" -- "0..*" Notificacion : recibe
 ```
