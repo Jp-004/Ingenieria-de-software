@@ -130,7 +130,7 @@ classDiagram
 		+agregarFechaFinal()
     }
 
-    class Administrativo() {
+    class Administrativo {
         +registroProfesor()
         +registroAlumno()
 		+crearCarrera()
