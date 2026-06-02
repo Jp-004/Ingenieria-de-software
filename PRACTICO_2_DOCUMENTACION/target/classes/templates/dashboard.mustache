@@ -17,7 +17,7 @@
         <p class="text-xl text-center text-gray-700 mb-8">¡Bienvenido!</p>
         {{/username}}
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-4 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg text-center shadow-sm">
                 <h2 class="text-2xl font-bold text-blue-700 mb-3">Gestionar Carrera</h2>
                 <p class="text-gray-600 mb-4">Administra carreras, planes de estudio y sus modificaciones.</p>
@@ -35,17 +35,18 @@
                 <p class="text-gray-600 mb-4">Da de alta a un nuevo profesor.</p>
                 <a href="/profesor/create" class="inline-block bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition duration-300">Nuevo Profesor</a>
             </div>
-        </div>
-        <div class="bg-orange-50 border border-orange-200 p-6 rounded-lg text-center shadow-sm">
-            <div>
-                <h2 class="text-xl font-bold text-orange-700 mb-3">Gestionar Materias</h2>
-                <p class="text-sm text-gray-600 mb-4">Gestiona las materias de la facultad.</p>
+            <div class="bg-orange-50 border border-orange-200 p-6 rounded-lg text-center shadow-sm flex flex-col h-full">
+                <div class="flex-grow">
+                    <h2 class="text-xl font-bold text-orange-700 mb-3">Gestionar Materias</h2>
+                    <p class="text-sm text-gray-600 mb-4">Gestiona las materias de la facultad.</p>
+                </div>  
+                <a href="/materia/list" class="inline-block w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition duration-300 mt-auto font-medium">Gestionar Materias</a>
             </div>
-            <a href="/materia/list" class="inline-block bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition duration-300">Gestionar Materias</a>
+            <div class="text-center mt-6">
+                <a href="/logout" class="inline-block bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition duration-300 text-lg">Cerrar Sesión</a>
+            </div>
         </div>
-        <div class="text-center mt-6">
-            <a href="/logout" class="inline-block bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition duration-300 text-lg">Cerrar Sesión</a>
-        </div>
+        
     </div>
 </body>
 </html>
