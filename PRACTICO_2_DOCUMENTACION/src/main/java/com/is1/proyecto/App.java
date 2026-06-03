@@ -24,6 +24,8 @@ import com.is1.proyecto.models.Profesor; // <--- AGREGAR ESTO
 import com.is1.proyecto.models.User;
 import com.is1.proyecto.models.Alumno;
 
+import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.PlanDeEstudio;
 /**
  * Clase principal de la aplicación Spark.
  * Configura las rutas, filtros y el inicio del servidor web.
@@ -57,6 +59,13 @@ public class App {
                 }
                 // 2. Ahora abrimos una conexión limpia.
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
+                Base.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
+                Base.exec("CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
+                Base.exec("CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
+                Base.exec("CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT);");
+                Base.exec("CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
+                Base.exec("CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
+                Base.exec("CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
             } catch (Exception e) {
                 System.err.println("Error crítico en DB: " + e.getMessage());
                 halt(500, "Error interno de conexión.");
@@ -574,5 +583,79 @@ public class App {
     
             return new ModelAndView(model, "materia_list.mustache");
         }, new MustacheTemplateEngine());
+// 1. EL ÍNDICE CENTRAL (Tu primera captura)
+        get("/materias/panel-gestion", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion.");
+                return null;
+            }
+            model.put("materias", Materia.findAll()); 
+            return new ModelAndView(model, "gestionar_materia.mustache"); 
+        }, new MustacheTemplateEngine());
+
+        // 2. IR AL NUEVO PANEL DE CREACIÓN COMPLETO (Renderiza alta_materia.mustache)
+        get("/materias/nueva", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion.");
+                return null;
+            }
+            model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll()); 
+            model.put("docentes", com.is1.proyecto.models.Profesor.findAll()); 
+            return new ModelAndView(model, "alta_materia.mustache"); 
+        }, new MustacheTemplateEngine());
+
+        // 3. PROCESAR EL ALTA COMPLETA (Guarda todo junto y vuelve al panel de gestión)
+        post("/materias/guardar-completa", (req, res) -> {
+            try {
+                String nombre = req.queryParams("nombre");
+                String codigo = req.queryParams("codigo");
+                String planId = req.queryParams("plan_de_estudio_id");
+                String horas = req.queryParams("horas");
+                String docenteId = req.queryParams("docente_id");
+                
+                Materia nueva = new Materia();
+                nueva.set("nombre", nombre);
+                nueva.set("codigo", codigo);
+                nueva.set("horas", Integer.parseInt(horas)); // Guardamos las horas
+                
+                if (planId != null && !planId.isEmpty()) {
+                    nueva.set("plan_de_estudio_id", Integer.parseInt(planId));
+                }
+                if (docenteId != null && !docenteId.isEmpty()) {
+                    nueva.set("docente_id", Integer.parseInt(docenteId)); // Guardamos el profe
+                }
+                nueva.saveIt();
+                
+                res.redirect("/materias/panel-gestion"); 
+                return null;
+            } catch (Exception e) {
+                System.err.println("Error al insertar materia completa: " + e.getMessage());
+                res.redirect("/materias/panel-gestion?error=Error al registrar la asignatura.");
+                return null;
+            }
+        });
+
+        // 4. ELIMINAR REGISTRO
+        post("/materias/eliminar", (req, res) -> {
+            try {
+                String materiaId = req.queryParams("materia_id");
+                if (materiaId != null && !materiaId.isEmpty()) {
+                    Materia m = Materia.findById(Integer.parseInt(materiaId));
+                    if (m != null) {
+                        m.delete(); 
+                    }
+                }
+                res.redirect("/materias/panel-gestion");
+                return null;
+            } catch (Exception e) {
+                System.err.println("Error al eliminar materia: " + e.getMessage());
+                res.redirect("/materias/panel-gestion?error=No se pudo eliminar.");
+                return null;
+            }
+        });
     } // Fin del método main
 } // Fin de la clase App

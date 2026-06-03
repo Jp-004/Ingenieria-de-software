@@ -34,7 +34,11 @@ CREATE TABLE materia (
     nombre TEXT NOT NULL,
     codigo TEXT NOT NULL UNIQUE,
     plan_de_estudio_id INTEGER,
-    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id)
+    docente_id INTEGER,  
+    base_datos TEXT, 
+    horas INTEGER,              
+    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id),
+    FOREIGN KEY (docente_id) REFERENCES profesor(id)
 );
 
 CREATE TABLE profesor (
