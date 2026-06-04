@@ -1,22 +1,8 @@
-# Directorio con archivos compilados y generados por Maven
-/target/
+# Maven build output
+target/
 
-# Archivos temporales de sistema y editores
-*.log
-*.tmp
-*.bak
-*.swp
+# Base de datos local
+*.db
 
-# Archivos de base de datos generados (si no quieres versionar la DB)
-/db/*.db
-
-# Archivos de configuración de IDEs comunes (opcional)
-.idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-
-# Archivos de sistema ocultos
-.DS_Store
-Thumbs.db
+# Archivos compilados
+*.class
