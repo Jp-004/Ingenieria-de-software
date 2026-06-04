@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Materias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Mis Materias Asignadas</h1>
+            <a href="/dashboard" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">Volver al Panel</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{#materias}}
+            <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">{{nombre}}</h2>
+                <p class="text-gray-600 mb-1"><span class="font-semibold">Código:</span> {{codigo}}</p>
+                <p class="text-gray-600 mb-4"><span class="font-semibold">Carga Horaria:</span> {{horas}} hs</p>
+                
+                <a href="/profesor/materias/{{id}}" class="block text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+                    Ver Alumnos y Fechas
+                </a>
+            </div>
+            {{/materias}}
+            
+            {{^materias}}
+            <div class="col-span-full bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <p class="text-yellow-700">Aún no tenés materias asignadas. Contactá al administrador.</p>
+            </div>
+            {{/materias}}
+        </div>
+    </div>
+</body>
+</html>

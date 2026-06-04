@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Materia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        
+        {{#materia}}
+        <div class="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{nombre}}</h1>
+                <p class="text-gray-500">Código de Asignatura: <span class="font-semibold">{{codigo}}</span></p>
+            </div>
+            <a href="/profesor/materias" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition">Volver a Materias</a>
+        </div>
+        {{/materia}}
+
+        {{#errorMessage}}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-center font-semibold">
+                {{errorMessage}}
+            </div>
+        {{/errorMessage}}
+        {{#successMessage}}
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-center font-semibold">
+                {{successMessage}}
+            </div>
+        {{/successMessage}}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Alumnos Inscriptos</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider border-b">
+                                <th class="p-3">Legajo</th>
+                                <th class="p-3">Apellido y Nombre</th>
+                                <th class="p-3">DNI</th>
+                                <th class="p-3">Correo Electrónico</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y text-gray-700">
+                            {{#alumnos}}
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="p-3 font-semibold text-blue-600">{{legajo}}</td>
+                                <td class="p-3">{{apellido}}, {{nombre}}</td>
+                                <td class="p-3 text-sm">{{dni}}</td>
+                                <td class="p-3 text-sm text-gray-500">{{correo}}</td>
+                            </tr>
+                            {{/alumnos}}
+                            
+                            {{^alumnos}}
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-500 bg-gray-50 rounded">
+                                    No hay alumnos registrados o inscriptos en esta materia todavía.
+                                </td>
+                            </tr>
+                            {{/alumnos}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6 flex flex-col gap-6">
+                
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Programar Examen</h2>
+                    <form action="/profesor/materias/fechas" method="POST" class="space-y-4">
+                        {{#materia}}
+                        <input type="hidden" name="materia_id" value="{{id}}">
+                        {{/materia}}
+
+                        <div>
+                            <label class="block font-medium text-gray-700 mb-1">Instancia:</label>
+                            <select name="instancia" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" required>
+                                <option value="Primer Parcial">Primer Parcial</option>
+                                <option value="Segundo Parcial">Segundo Parcial</option>
+                                <option value="Recuperatorio">Recuperatorio</option>
+                                <option value="Examen Final">Examen Final</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block font-medium text-gray-700 mb-1">Fecha del Examen:</label>
+                            <input type="date" name="fecha" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition">
+                            Confirmar Fecha
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm tracking-wider uppercase">Cronograma Establecido</h3>
+                    <div class="space-y-2">
+                        {{#fechas}}
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded border-l-4 border-orange-500">
+                            <span class="font-semibold text-gray-800 text-sm">{{instancia}}</span>
+                            <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-mono">{{fecha}}</span>
+                        </div>
+                        {{/fechas}}
+                        
+                        {{^fechas}}
+                        <p class="text-sm text-gray-400 text-center py-2">No hay fechas agendadas.</p>
+                        {{/fechas}}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>
