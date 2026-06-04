@@ -10,36 +10,18 @@ import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contrase
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.models.Alumno; // Para crear mapas de datos (modelos para las plantillas).
-import com.is1.proyecto.models.Profesor; // Interfaz Map, utilizada para Map.of() o HashMap.
-import com.is1.proyecto.models.User; // Clase Singleton para la configuración de la base de datos.
+import com.is1.proyecto.models.Materia; // Interfaz Map, utilizada para Map.of() o HashMap.
+import com.is1.proyecto.models.Profesor; // Clase Singleton para la configuración de la base de datos.
+import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
 
-import spark.ModelAndView; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.after; // <--- AGREGAR ESTO
+import spark.ModelAndView; // <--- AGREGAR ESTO
+import static spark.Spark.after;
 import static spark.Spark.before;
 import static spark.Spark.get;
 import static spark.Spark.halt;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static spark.Spark.*;
-
-import org.javalite.activejdbc.Base;
-import org.mindrot.jbcrypt.BCrypt;
-
-import spark.ModelAndView;
-import spark.template.mustache.MustacheTemplateEngine;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.is1.proyecto.config.DBConfigSingleton;
-import com.is1.proyecto.models.User;
-import com.is1.proyecto.models.Profesor;
-import com.is1.proyecto.models.Alumno;
-import com.is1.proyecto.models.Materia;
-import com.is1.proyecto.models.PlanDeEstudio;
 
 public class App {
 
@@ -523,17 +505,32 @@ public class App {
                 res.redirect("/materias/panel-gestion?error=No se pudo eliminar.");
                 return null;
             }
-    
-            model.put("materias", materias);
-    
+        });
+
+        // ==================== CARRERA - LISTAR ====================
+        get("/carrera/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            
+            // Busca todas las carreras en la base de datos
+            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
+            model.put("carreras", carreras);
+
+            // Atrapa el mensaje de éxito (cuando creas o editas una carrera)
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
-    
-            return new ModelAndView(model, "materia_list.mustache");
-        }, new MustacheTemplateEngine());
+            
+            // Atrapa mensajes de error (cuando intentas borrar una carrera con planes, por ejemplo)
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
 
+            // Renderiza la vista (Nota: sin la carpeta "gestion/" para que la encuentre bien)
+            return new ModelAndView(model, "carrera_list.mustache");
+        }, new MustacheTemplateEngine());
+        
         // ==================== CARRERA - CREAR ====================
         // Muestra el formulario para crear una nueva carrera
         get("/carrera/create", (req, res) -> {
@@ -677,4 +674,4 @@ public class App {
             return null;
         });
     } // Fin del método main
-} // Fin de la clase App
+} // Fin de la clase App 
