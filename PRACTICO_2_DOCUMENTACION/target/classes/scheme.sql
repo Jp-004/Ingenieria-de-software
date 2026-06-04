@@ -29,20 +29,24 @@ CREATE TABLE plan_de_estudio (
     FOREIGN KEY (carrera_id) REFERENCES carrera(id)
 );
 
-CREATE TABLE materia (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT NOT NULL,
-    codigo TEXT NOT NULL UNIQUE,
-    plan_de_estudio_id INTEGER,
-    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id)
-);
-
 CREATE TABLE profesor (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
     correo TEXT NOT NULL UNIQUE,
     dni TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE materia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    codigo TEXT NOT NULL UNIQUE,
+    plan_de_estudio_id INTEGER,
+    docente_id INTEGER,
+    base_datos TEXT,
+    horas INTEGER,
+    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id),
+    FOREIGN KEY (docente_id) REFERENCES profesor(id)
 );
 
 CREATE TABLE alumno (

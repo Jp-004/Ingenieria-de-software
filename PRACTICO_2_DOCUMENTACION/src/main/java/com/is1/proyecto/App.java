@@ -16,6 +16,8 @@ import com.is1.proyecto.config.DBConfigSingleton;
 import com.is1.proyecto.models.User;
 import com.is1.proyecto.models.Profesor;
 import com.is1.proyecto.models.Alumno;
+import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.PlanDeEstudio;
 
 public class App {
 
@@ -32,6 +34,12 @@ public class App {
                     Base.close();
                 }
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
+                Base.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
+                Base.exec("CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
+                Base.exec("CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
+                Base.exec("CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
+                Base.exec("CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
+                Base.exec("CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
             } catch (Exception e) {
                 System.err.println("Error crítico en DB: " + e.getMessage());
                 halt(500, "Error interno de conexión.");
@@ -47,8 +55,6 @@ public class App {
                 System.err.println("Error cerrando conexión: " + e.getMessage());
             }
         });
-
-        // ==================== AUTH / LOGIN ====================
 
         get("/", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -86,6 +92,136 @@ public class App {
             res.redirect("/");
             return null;
         });
+
+        get("/dashboard", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            if (currentUsername == null || loggedIn == null || !loggedIn) {
+                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                return null;
+            }
+
+            model.put("username", currentUsername);
+            java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
+            model.put("alumnos", listaAlumnos);
+
+            return new ModelAndView(model, "admin/dashboard.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/alumno/create", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+            return new ModelAndView(model, "admin/alumno_form.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/profesor/create", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+            return new ModelAndView(model, "admin/profesor_form.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/gestion/carreras", (req, res) -> {
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/login?error=Debes iniciar sesión.");
+                return null;
+            }
+            return new ModelAndView(new HashMap<>(), "gestion/gestion_carreras.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/carrera/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
+            model.put("carreras", carreras);
+
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+            return new ModelAndView(model, "gestion/carrera_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/plan/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+
+            for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
+                com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
+                if (carrera != null) {
+                    plan.set("carrera_nombre", carrera.getNombre());
+                }
+            }
+
+            model.put("planes", planes);
+
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+            return new ModelAndView(model, "gestion/plan_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/materia/list", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            java.util.List<com.is1.proyecto.models.Materia> materias = com.is1.proyecto.models.Materia.findAll();
+
+            for (com.is1.proyecto.models.Materia materia : materias) {
+                int planId = materia.getPlanDeEstudioId();
+                if (planId > 0) {
+                    com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
+                    if (plan != null) {
+                        materia.set("plan_de_estudio_nombre", "Plan " + plan.getAnioVigencia());
+                    }
+                }
+            }
+
+            model.put("materias", materias);
+
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+            return new ModelAndView(model, "gestion/materia_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/materias/panel-gestion", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion.");
+                return null;
+            }
+            model.put("materias", Materia.findAll());
+            return new ModelAndView(model, "gestionar_materia.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/materias/nueva", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion.");
+                return null;
+            }
+            model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll());
+            model.put("docentes", com.is1.proyecto.models.Profesor.findAll());
+            return new ModelAndView(model, "alta_materia.mustache");
+        }, new MustacheTemplateEngine());
 
         post("/user/new", (req, res) -> {
             String name = req.queryParams("name");
@@ -126,7 +262,6 @@ public class App {
 
         post("/login", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-
             String username = req.queryParams("username");
             String plainTextPassword = req.queryParams("password");
 
@@ -161,7 +296,6 @@ public class App {
                 } else if ("Profesor".equals(rango)) {
                     return new ModelAndView(model, "profesor/dashboard_profesor.mustache");
                 } else if ("Alumno".equals(rango)) {
-                    // Si no crearon esta vista aún, la buscan en la subcarpeta alumno
                     return new ModelAndView(model, "alumno/dashboard_alumno.mustache");
                 } else {
                     model.put("errorMessage", "Rango de usuario no reconocido.");
@@ -202,40 +336,6 @@ public class App {
                         .writeValueAsString(Map.of("error", "Error interno al registrar usuario: " + e.getMessage()));
             }
         });
-
-        // ==================== DASHBOARD ADMIN ====================
-
-        get("/dashboard", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            String currentUsername = req.session().attribute("currentUserUsername");
-            Boolean loggedIn = req.session().attribute("loggedIn");
-
-            if (currentUsername == null || loggedIn == null || !loggedIn) {
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
-                return null;
-            }
-
-            model.put("username", currentUsername);
-            java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
-            model.put("alumnos", listaAlumnos);
-
-            return new ModelAndView(model, "admin/dashboard.mustache");
-        }, new MustacheTemplateEngine());
-
-        // ==================== RUTAS DE CREACIÓN (ADMIN) ====================
-
-        get("/alumno/create", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            String errorMessage = req.queryParams("error");
-            if (errorMessage != null && !errorMessage.isEmpty()) {
-                model.put("errorMessage", errorMessage);
-            }
-            return new ModelAndView(model, "admin/alumno_form.mustache");
-        }, new MustacheTemplateEngine());
 
         post("/alumno/create", (req, res) -> {
             String nombre = req.queryParams("nombre");
@@ -299,19 +399,6 @@ public class App {
             }
         });
 
-        get("/profesor/create", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            String errorMessage = req.queryParams("error");
-            if (errorMessage != null && !errorMessage.isEmpty()) {
-                model.put("errorMessage", errorMessage);
-            }
-            return new ModelAndView(model, "admin/profesor_form.mustache");
-        }, new MustacheTemplateEngine());
-
         post("/profesor/create", (req, res) -> {
             String nombre = req.queryParams("nombre");
             String apellido = req.queryParams("apellido");
@@ -368,72 +455,52 @@ public class App {
             }
         });
 
-        // ==================== GESTIÓN CENTRAL DE CARRERAS ====================
+        post("/materias/guardar-completa", (req, res) -> {
+            try {
+                String nombre = req.queryParams("nombre");
+                String codigo = req.queryParams("codigo");
+                String planId = req.queryParams("plan_de_estudio_id");
+                String horas = req.queryParams("horas");
+                String docenteId = req.queryParams("docente_id");
 
-        get("/gestion/carreras", (req, res) -> {
-            Boolean loggedIn = req.session().attribute("loggedIn");
-            if (loggedIn == null || !loggedIn) {
-                res.redirect("/login?error=Debes iniciar sesión.");
+                Materia nueva = new Materia();
+                nueva.set("nombre", nombre);
+                nueva.set("codigo", codigo);
+                nueva.set("horas", Integer.parseInt(horas));
+
+                if (planId != null && !planId.isEmpty()) {
+                    nueva.set("plan_de_estudio_id", Integer.parseInt(planId));
+                }
+                if (docenteId != null && !docenteId.isEmpty()) {
+                    nueva.set("docente_id", Integer.parseInt(docenteId));
+                }
+                nueva.saveIt();
+
+                res.redirect("/materias/panel-gestion");
+                return null;
+            } catch (Exception e) {
+                System.err.println("Error al insertar materia completa: " + e.getMessage());
+                res.redirect("/materias/panel-gestion?error=Error al registrar la asignatura.");
                 return null;
             }
-            return new ModelAndView(new HashMap<>(), "gestion/gestion_carreras.mustache");
-        }, new MustacheTemplateEngine());
+        });
 
-        get("/carrera/list", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
-            model.put("carreras", carreras);
-
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            return new ModelAndView(model, "gestion/carrera_list.mustache");
-        }, new MustacheTemplateEngine());
-
-        get("/plan/list", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
-                    .findAll();
-
-            for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
-                com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
-                if (carrera != null) {
-                    plan.set("carrera_nombre", carrera.getNombre());
-                }
-            }
-
-            model.put("planes", planes);
-
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            return new ModelAndView(model, "gestion/plan_list.mustache");
-        }, new MustacheTemplateEngine());
-
-        get("/materia/list", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.Materia> materias = com.is1.proyecto.models.Materia.findAll();
-
-            for (com.is1.proyecto.models.Materia materia : materias) {
-                int planId = materia.getPlanDeEstudioId();
-                if (planId > 0) {
-                    com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
-                    if (plan != null) {
-                        materia.set("plan_de_estudio_nombre", "Plan " + plan.getAnioVigencia());
+        post("/materias/eliminar", (req, res) -> {
+            try {
+                String materiaId = req.queryParams("materia_id");
+                if (materiaId != null && !materiaId.isEmpty()) {
+                    Materia m = Materia.findById(Integer.parseInt(materiaId));
+                    if (m != null) {
+                        m.delete();
                     }
                 }
+                res.redirect("/materias/panel-gestion");
+                return null;
+            } catch (Exception e) {
+                System.err.println("Error al eliminar materia: " + e.getMessage());
+                res.redirect("/materias/panel-gestion?error=No se pudo eliminar.");
+                return null;
             }
-
-            model.put("materias", materias);
-
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            return new ModelAndView(model, "gestion/materia_list.mustache");
-        }, new MustacheTemplateEngine());
-
-    } // Fin del método main
-} // Fin de la clase App
+        });
+    }
+}
