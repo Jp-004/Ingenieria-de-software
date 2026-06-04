@@ -38,12 +38,18 @@ public class App {
                     Base.close();
                 }
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
-                Base.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
-                Base.exec("CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
-                Base.exec("CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
-                Base.exec("CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
-                Base.exec("CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
-                Base.exec("CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
             } catch (Exception e) {
                 System.err.println("Error crítico en DB: " + e.getMessage());
                 halt(500, "Error interno de conexión.");
@@ -163,7 +169,8 @@ public class App {
 
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
+                    .findAll();
 
             for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
@@ -510,7 +517,7 @@ public class App {
         // ==================== CARRERA - LISTAR ====================
         get("/carrera/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            
+
             // Busca todas las carreras en la base de datos
             java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
             model.put("carreras", carreras);
@@ -520,17 +527,19 @@ public class App {
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
-            
-            // Atrapa mensajes de error (cuando intentas borrar una carrera con planes, por ejemplo)
+
+            // Atrapa mensajes de error (cuando intentas borrar una carrera con planes, por
+            // ejemplo)
             String errorMessage = req.queryParams("error");
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
             }
 
-            // Renderiza la vista (Nota: sin la carpeta "gestion/" para que la encuentre bien)
+            // Renderiza la vista (Nota: sin la carpeta "gestion/" para que la encuentre
+            // bien)
             return new ModelAndView(model, "carrera_list.mustache");
         }, new MustacheTemplateEngine());
-        
+
         // ==================== CARRERA - CREAR ====================
         // Muestra el formulario para crear una nueva carrera
         get("/carrera/create", (req, res) -> {
@@ -602,7 +611,7 @@ public class App {
             }
 
             model.put("carrera", carrera);
-            
+
             String errorMessage = req.queryParams("error");
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
@@ -617,7 +626,8 @@ public class App {
             String nombre = req.queryParams("nombre");
             String codigo = req.queryParams("codigo");
 
-            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty()
+                    || codigo.trim().isEmpty()) {
                 res.redirect("/carrera/edit?id=" + idStr + "&error=Todos+los+campos+son+obligatorios");
                 return "";
             }
@@ -626,10 +636,11 @@ public class App {
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(idStr);
                 if (carrera != null) {
                     // Validar que el nuevo código no le pertenezca ya a otra carrera distinta
-                    com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera.findFirst("codigo = ?", codigo);
+                    com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera
+                            .findFirst("codigo = ?", codigo);
                     if (carreraExistente != null && !carreraExistente.getId().toString().equals(idStr)) {
-                         res.redirect("/carrera/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+carrera");
-                         return "";
+                        res.redirect("/carrera/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+carrera");
+                        return "";
                     }
 
                     carrera.setNombre(nombre);
@@ -657,8 +668,9 @@ public class App {
                         // Regla de negocio: No permitir eliminar si hay Planes de Estudio asociados
                         long planesAsociados = com.is1.proyecto.models.PlanDeEstudio.count("carrera_id = ?", idStr);
                         if (planesAsociados > 0) {
-                             res.redirect("/carrera/list?error=No+se+puede+eliminar+la+carrera+porque+tiene+planes+de+estudio+activos");
-                             return null;
+                            res.redirect(
+                                    "/carrera/list?error=No+se+puede+eliminar+la+carrera+porque+tiene+planes+de+estudio+activos");
+                            return null;
                         }
 
                         carrera.delete();
@@ -673,5 +685,85 @@ public class App {
             }
             return null;
         });
+
+        // ==================== CALIFICACIONES ====================
+
+        get("/profesor/evaluar", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            // Validar que haya iniciado sesión y sea Profesor
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado.+Solo+profesores+pueden+cargar+notas.");
+                return null;
+            }
+
+            // Mandamos las listas para armar los <select> en el HTML
+            model.put("alumnos", com.is1.proyecto.models.Alumno.findAll());
+            model.put("materias", com.is1.proyecto.models.Materia.findAll());
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            // Renderizamos la vista dentro de la carpeta del profesor
+            return new ModelAndView(model, "profesor/calificacion_form.mustache");
+        }, new MustacheTemplateEngine());
+
+        post("/profesor/evaluar", (req, res) -> {
+            String alumnoId = req.queryParams("alumno_id");
+            String materiaId = req.queryParams("materia_id");
+            String instancia = req.queryParams("instancia");
+            String notaStr = req.queryParams("nota");
+            String redirectUrl = "/profesor/evaluar";
+
+            // Validar campos vacíos
+            if (alumnoId == null || materiaId == null || instancia == null || notaStr == null ||
+                    alumnoId.trim().isEmpty() || materiaId.trim().isEmpty() || instancia.trim().isEmpty()
+                    || notaStr.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                // Convertir la nota a número y validar el rango
+                double nota = Double.parseDouble(notaStr);
+                if (nota < 0 || nota > 10) {
+                    res.redirect(redirectUrl + "?error=La+nota+debe+estar+entre+0+y+10");
+                    return "";
+                }
+
+                // Guardar en la base de datos
+                com.is1.proyecto.models.Calificacion nuevaCalificacion = new com.is1.proyecto.models.Calificacion();
+                nuevaCalificacion.set("alumno_id", Integer.parseInt(alumnoId));
+                nuevaCalificacion.set("materia_id", Integer.parseInt(materiaId));
+                nuevaCalificacion.set("instancia", instancia);
+                nuevaCalificacion.set("nota", nota);
+                nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
+                nuevaCalificacion.saveIt();
+
+                res.status(201);
+                res.redirect(redirectUrl + "?message=Calificacion+registrada+con+exito");
+                return "";
+
+            } catch (NumberFormatException e) {
+                res.redirect(redirectUrl + "?error=La+nota+debe+ser+un+numero+valido");
+                return "";
+            } catch (Exception e) {
+                System.err.println("Error al registrar calificacion: " + e.getMessage());
+                e.printStackTrace();
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+nota");
+                return "";
+            }
+        });
+
     } // Fin del método main
-} // Fin de la clase App 
+} // Fin de la clase App
