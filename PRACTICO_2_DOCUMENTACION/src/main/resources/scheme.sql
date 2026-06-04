@@ -68,3 +68,14 @@ CREATE TABLE inscripcion (
     FOREIGN KEY (alumno_id) REFERENCES alumno(id),
     FOREIGN KEY (materia_id) REFERENCES materia(id)
 );
+
+CREATE TABLE IF NOT EXISTS calificaciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    alumno_id INTEGER NOT NULL,
+    materia_id INTEGER NOT NULL,
+    instancia VARCHAR(50) NOT NULL, -- Ej: 'Primer Parcial', 'Segundo Parcial', 'Final'
+    nota REAL NOT NULL,
+    fecha TEXT,
+    FOREIGN KEY (alumno_id) REFERENCES alumnos(id),
+    FOREIGN KEY (materia_id) REFERENCES materias(id)
+);
