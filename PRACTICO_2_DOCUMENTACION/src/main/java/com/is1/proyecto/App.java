@@ -212,7 +212,7 @@ public class App {
                 return null;
             }
             model.put("materias", Materia.findAll());
-            return new ModelAndView(model, "gestionar_materia.mustache");
+            return new ModelAndView(model, "gestion/gestionar_materia.mustache");
         }, new MustacheTemplateEngine());
 
         get("/materias/nueva", (req, res) -> {
@@ -224,7 +224,7 @@ public class App {
             }
             model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll());
             model.put("docentes", com.is1.proyecto.models.Profesor.findAll());
-            return new ModelAndView(model, "alta_materia.mustache");
+            return new ModelAndView(model, "gestion/alta_materia.mustache");
         }, new MustacheTemplateEngine());
 
         post("/user/new", (req, res) -> {
