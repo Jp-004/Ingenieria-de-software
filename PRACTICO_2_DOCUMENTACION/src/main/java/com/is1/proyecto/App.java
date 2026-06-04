@@ -107,18 +107,53 @@ public class App {
             Map<String, Object> model = new HashMap<>();
             String currentUsername = req.session().attribute("currentUserUsername");
             Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango"); // Traemos el rango de la sesión
 
             if (currentUsername == null || loggedIn == null || !loggedIn) {
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                res.redirect("/?error=Debes iniciar sesión para acceder a esta página.");
                 return null;
             }
 
             model.put("username", currentUsername);
-            java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
-            model.put("alumnos", listaAlumnos);
 
-            return new ModelAndView(model, "admin/dashboard.mustache");
+            // Redirigir según el rango del usuario
+            if ("Admin".equals(rango)) {
+                java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
+                model.put("alumnos", listaAlumnos);
+                return new ModelAndView(model, "admin/dashboard.mustache");
+
+            } else if ("Profesor".equals(rango)) {
+                return new ModelAndView(model, "profesor/dashboard_profesor.mustache");
+
+            } else if ("Alumno".equals(rango)) {
+                return new ModelAndView(model, "alumno/dashboard_alumno.mustache");
+            }
+
+            // Si el rango no coincide con nada, lo mandamos al login por seguridad
+            res.redirect("/");
+            return null;
         }, new MustacheTemplateEngine());
+
+        /*
+         * get("/dashboard", (req, res) -> {
+         * Map<String, Object> model = new HashMap<>();
+         * String currentUsername = req.session().attribute("currentUserUsername");
+         * Boolean loggedIn = req.session().attribute("loggedIn");
+         * 
+         * if (currentUsername == null || loggedIn == null || !loggedIn) {
+         * res.redirect("/login?error=Debes iniciar sesión para acceder a esta página."
+         * );
+         * return null;
+         * }
+         * 
+         * model.put("username", currentUsername);
+         * java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos =
+         * com.is1.proyecto.models.Alumno.findAll();
+         * model.put("alumnos", listaAlumnos);
+         * 
+         * return new ModelAndView(model, "admin/dashboard.mustache");
+         * }, new MustacheTemplateEngine());
+         */
 
         get("/alumno/create", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -761,6 +796,163 @@ public class App {
                 System.err.println("Error al registrar calificacion: " + e.getMessage());
                 e.printStackTrace();
                 res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+nota");
+                return "";
+            }
+        });
+
+        // ==================== PROFESOR - MIS MATERIAS ====================
+
+        get("/profesor/materias", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+            String correoProfesor = req.session().attribute("currentUserUsername");
+
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado");
+                return null;
+            }
+
+            try {
+                // Buscamos al profesor por su correo para obtener su ID real
+                com.is1.proyecto.models.Profesor profe = com.is1.proyecto.models.Profesor.findFirst("correo = ?",
+                        correoProfesor);
+
+                if (profe != null) {
+                    // Buscamos solo las materias asignadas a este profesor
+                    java.util.List<com.is1.proyecto.models.Materia> misMaterias = com.is1.proyecto.models.Materia
+                            .where("docente_id = ?", profe.getId());
+                    model.put("materias", misMaterias);
+                }
+            } catch (Exception e) {
+                System.err.println("Error al cargar las materias del profesor: " + e.getMessage());
+            }
+
+            return new ModelAndView(model, "profesor/mis_materias.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== DETALLE DE MATERIA Y ALUMNOS INCRIPTOS
+        // ====================
+
+        get("/profesor/materias/:id", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado");
+                return null;
+            }
+
+            String materiaIdStr = req.params(":id");
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
+                if (materia == null) {
+                    res.redirect("/profesor/materias?error=Materia+no+encontrada");
+                    return null;
+                }
+                model.put("materia", materia);
+
+                // 1. Buscar alumnos inscriptos cruzando la tabla 'inscripcion' con 'alumno'
+                java.util.List<com.is1.proyecto.models.Inscripcion> inscripciones = com.is1.proyecto.models.Inscripcion
+                        .where("materia_id = ?", materia.getId());
+                java.util.List<com.is1.proyecto.models.Alumno> alumnosInscriptos = new java.util.ArrayList<>();
+
+                for (com.is1.proyecto.models.Inscripcion ins : inscripciones) {
+                    com.is1.proyecto.models.Alumno alu = com.is1.proyecto.models.Alumno.findById(ins.get("alumno_id"));
+                    if (alu != null) {
+                        alumnosInscriptos.add(alu);
+                    }
+                }
+                model.put("alumnos", alumnosInscriptos);
+
+                // 2. Buscar las fechas de examen ya agendadas para esta materia
+                java.util.List<com.is1.proyecto.models.FechaExamen> fechasAgendadas = com.is1.proyecto.models.FechaExamen
+                        .where("materia_id = ?", materia.getId());
+                model.put("fechas", fechasAgendadas);
+
+            } catch (Exception e) {
+                System.err.println("Error al cargar detalle de materia: " + e.getMessage());
+            }
+
+            // Manejo de mensajes por URL
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            return new ModelAndView(model, "profesor/materia_detalle.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== ASIGNAR FECHA DE EXAMEN (CON VALIDACIONES)
+        // ====================
+
+        post("/profesor/materias/fechas", (req, res) -> {
+            String materiaIdStr = req.queryParams("materia_id");
+            String instancia = req.queryParams("instancia");
+            String fecha = req.queryParams("fecha"); // Formato nativo HTML: YYYY-MM-DD
+            String redirectUrl = "/profesor/materias/" + materiaIdStr;
+
+            if (materiaIdStr == null || instancia == null || fecha == null || fecha.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
+
+                // Obtenemos la carrera a la que pertenece la materia mediante el Plan de
+                // Estudio
+                com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio
+                        .findById(materia.get("plan_de_estudio_id"));
+                if (plan == null) {
+                    res.redirect(redirectUrl + "?error=La+materia+no+tiene+un+plan+de+estudio+asociado");
+                    return "";
+                }
+                Object carreraId = plan.get("carrera_id");
+
+                // REGLA 1: Validar que la fecha esté dentro de un rango/periodo permitido por
+                // el Admin para esta carrera
+                long dentroDePeriodo = com.is1.proyecto.models.PeriodoExamen.count(
+                        "carrera_id = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
+                        carreraId, fecha, fecha);
+
+                if (dentroDePeriodo == 0) {
+                    res.redirect(redirectUrl
+                            + "?error=La+fecha+seleccionada+no+corresponde+a+ningun+calendario+academico+configurado+por+el+admin.");
+                    return "";
+                }
+
+                // REGLA 2: Validar que no haya más de 2 exámenes el mismo día para la misma
+                // carrera (Subquery eficiente)
+                long examenesEseDia = com.is1.proyecto.models.FechaExamen.count(
+                        "fecha = ? AND materia_id IN (SELECT id FROM materia WHERE plan_de_estudio_id IN (SELECT id FROM plan_de_estudio WHERE carrera_id = ?))",
+                        fecha, carreraId);
+
+                if (examenesEseDia >= 2) {
+                    res.redirect(redirectUrl
+                            + "?error=Cupo+de+examenes+completo.+Ya+hay+2+parciales+programados+para+esta+carrera+el+mismo+dia.");
+                    return "";
+                }
+
+                // Si pasa las dos reglas de negocio, se guarda de forma segura
+                com.is1.proyecto.models.FechaExamen nuevaFecha = new com.is1.proyecto.models.FechaExamen();
+                nuevaFecha.set("materia_id", materia.getId());
+                nuevaFecha.set("instancia", instancia);
+                nuevaFecha.set("fecha", fecha);
+                nuevaFecha.saveIt();
+
+                res.redirect(redirectUrl + "?message=Fecha+de+examen+programada+exitosamente.");
+                return "";
+
+            } catch (Exception e) {
+                System.err.println("Error al procesar fecha de examen: " + e.getMessage());
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+fecha");
                 return "";
             }
         });
