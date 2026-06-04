@@ -528,10 +528,10 @@ public class App {
                 model.put("errorMessage", errorMessage);
             }
 
-            // Renderiza la vista (Nota: sin la carpeta "gestion/" para que la encuentre bien)
+            // Renderiza la vista
             return new ModelAndView(model, "gestion/carrera_list.mustache");
         }, new MustacheTemplateEngine());
-        
+
         // ==================== CARRERA - CREAR ====================
         // Muestra el formulario para crear una nueva carrera
         get("/carrera/create", (req, res) -> {
@@ -603,7 +603,7 @@ public class App {
             }
 
             model.put("carrera", carrera);
-            
+
             String errorMessage = req.queryParams("error");
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
@@ -618,7 +618,8 @@ public class App {
             String nombre = req.queryParams("nombre");
             String codigo = req.queryParams("codigo");
 
-            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty()
+                    || codigo.trim().isEmpty()) {
                 res.redirect("/carrera/edit?id=" + idStr + "&error=Todos+los+campos+son+obligatorios");
                 return "";
             }
@@ -627,10 +628,11 @@ public class App {
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(idStr);
                 if (carrera != null) {
                     // Validar que el nuevo código no le pertenezca ya a otra carrera distinta
-                    com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera.findFirst("codigo = ?", codigo);
+                    com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera
+                            .findFirst("codigo = ?", codigo);
                     if (carreraExistente != null && !carreraExistente.getId().toString().equals(idStr)) {
-                         res.redirect("/carrera/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+carrera");
-                         return "";
+                        res.redirect("/carrera/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+carrera");
+                        return "";
                     }
 
                     carrera.setNombre(nombre);
@@ -658,8 +660,9 @@ public class App {
                         // Regla de negocio: No permitir eliminar si hay Planes de Estudio asociados
                         long planesAsociados = com.is1.proyecto.models.PlanDeEstudio.count("carrera_id = ?", idStr);
                         if (planesAsociados > 0) {
-                             res.redirect("/carrera/list?error=No+se+puede+eliminar+la+carrera+porque+tiene+planes+de+estudio+activos");
-                             return null;
+                            res.redirect(
+                                    "/carrera/list?error=No+se+puede+eliminar+la+carrera+porque+tiene+planes+de+estudio+activos");
+                            return null;
                         }
 
                         carrera.delete();
@@ -727,7 +730,7 @@ public class App {
             // Validaciones básicas
             if (anioVigencia == null || anioVigencia.trim().isEmpty() || 
                 carreraId == null || carreraId.trim().isEmpty()) {
-                res.redirect(redirectUrl + "?error=El+anio+de+vigencia+y+la+carrera+son+obligatorios");
+                res.redirect(redirectUrl + "?error=empty_fields");
                 return "";
             }
 
@@ -749,7 +752,7 @@ public class App {
 
                 if (planExistente != null) {
                     // Si encontramos uno, frenamos todo y devolvemos un error a la vista
-                    res.redirect(redirectUrl + "?error=Ya+existe+un+plan+de+estudio+para+esa+carrera+en+ese+anio");
+                    res.redirect(redirectUrl + "?error=duplicate");
                     return "";
                 }
                 // Instanciamos y guardamos el nuevo plan usando ActiveJDBC
@@ -764,11 +767,242 @@ public class App {
                 return "";
 
             } catch (NumberFormatException e) {
-                res.redirect(redirectUrl + "?error=El+anio+de+vigencia+debe+ser+un+numero+valido");
+                res.redirect(redirectUrl + "?error=not_a_number");
                 return "";
             } catch (Exception e) {
                 System.err.println("Error al registrar el plan: " + e.getMessage());
-                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+el+plan");
+                res.redirect(redirectUrl + "?error=internal_error");
+                return "";
+            }
+        });
+
+        // ==================== CALIFICACIONES ====================
+
+        get("/profesor/evaluar", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            // Validar que haya iniciado sesión y sea Profesor
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado.+Solo+profesores+pueden+cargar+notas.");
+                return null;
+            }
+
+            // Mandamos las listas para armar los <select> en el HTML
+            model.put("alumnos", com.is1.proyecto.models.Alumno.findAll());
+            model.put("materias", com.is1.proyecto.models.Materia.findAll());
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            // Renderizamos la vista dentro de la carpeta del profesor
+            return new ModelAndView(model, "profesor/calificacion_form.mustache");
+        }, new MustacheTemplateEngine());
+
+        post("/profesor/evaluar", (req, res) -> {
+            String alumnoId = req.queryParams("alumno_id");
+            String materiaId = req.queryParams("materia_id");
+            String instancia = req.queryParams("instancia");
+            String notaStr = req.queryParams("nota");
+            String redirectUrl = "/profesor/evaluar";
+
+            // Validar campos vacíos
+            if (alumnoId == null || materiaId == null || instancia == null || notaStr == null ||
+                    alumnoId.trim().isEmpty() || materiaId.trim().isEmpty() || instancia.trim().isEmpty()
+                    || notaStr.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                // Convertir la nota a número y validar el rango
+                double nota = Double.parseDouble(notaStr);
+                if (nota < 0 || nota > 10) {
+                    res.redirect(redirectUrl + "?error=La+nota+debe+estar+entre+0+y+10");
+                    return "";
+                }
+
+                // Guardar en la base de datos
+                com.is1.proyecto.models.Calificacion nuevaCalificacion = new com.is1.proyecto.models.Calificacion();
+                nuevaCalificacion.set("alumno_id", Integer.parseInt(alumnoId));
+                nuevaCalificacion.set("materia_id", Integer.parseInt(materiaId));
+                nuevaCalificacion.set("instancia", instancia);
+                nuevaCalificacion.set("nota", nota);
+                nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
+                nuevaCalificacion.saveIt();
+
+                res.status(201);
+                res.redirect(redirectUrl + "?message=Calificacion+registrada+con+exito");
+                return "";
+
+            } catch (NumberFormatException e) {
+                res.redirect(redirectUrl + "?error=La+nota+debe+ser+un+numero+valido");
+                return "";
+            } catch (Exception e) {
+                System.err.println("Error al registrar calificacion: " + e.getMessage());
+                e.printStackTrace();
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+nota");
+                return "";
+            }
+        });
+
+        // ==================== PROFESOR - MIS MATERIAS ====================
+
+        get("/profesor/materias", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+            String correoProfesor = req.session().attribute("currentUserUsername");
+
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado");
+                return null;
+            }
+
+            try {
+                // Buscamos al profesor por su correo para obtener su ID real
+                com.is1.proyecto.models.Profesor profe = com.is1.proyecto.models.Profesor.findFirst("correo = ?",
+                        correoProfesor);
+
+                if (profe != null) {
+                    // Buscamos solo las materias asignadas a este profesor
+                    java.util.List<com.is1.proyecto.models.Materia> misMaterias = com.is1.proyecto.models.Materia
+                            .where("docente_id = ?", profe.getId());
+                    model.put("materias", misMaterias);
+                }
+            } catch (Exception e) {
+                System.err.println("Error al cargar las materias del profesor: " + e.getMessage());
+            }
+
+            return new ModelAndView(model, "profesor/mis_materias.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== DETALLE DE MATERIA Y ALUMNOS INCRIPTOS ====================
+
+        get("/profesor/materias/:id", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+            if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado");
+                return null;
+            }
+
+            String materiaIdStr = req.params(":id");
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
+                if (materia == null) {
+                    res.redirect("/profesor/materias?error=Materia+no+encontrada");
+                    return null;
+                }
+                model.put("materia", materia);
+
+                // 1. Buscar alumnos inscriptos cruzando la tabla 'inscripcion' con 'alumno'
+                java.util.List<com.is1.proyecto.models.Inscripcion> inscripciones = com.is1.proyecto.models.Inscripcion
+                        .where("materia_id = ?", materia.getId());
+                java.util.List<com.is1.proyecto.models.Alumno> alumnosInscriptos = new java.util.ArrayList<>();
+
+                for (com.is1.proyecto.models.Inscripcion ins : inscripciones) {
+                    com.is1.proyecto.models.Alumno alu = com.is1.proyecto.models.Alumno.findById(ins.get("alumno_id"));
+                    if (alu != null) {
+                        alumnosInscriptos.add(alu);
+                    }
+                }
+                model.put("alumnos", alumnosInscriptos);
+
+                // 2. Buscar las fechas de examen ya agendadas para esta materia
+                java.util.List<com.is1.proyecto.models.FechaExamen> fechasAgendadas = com.is1.proyecto.models.FechaExamen
+                        .where("materia_id = ?", materia.getId());
+                model.put("fechas", fechasAgendadas);
+
+            } catch (Exception e) {
+                System.err.println("Error al cargar detalle de materia: " + e.getMessage());
+            }
+
+            // Manejo de mensajes por URL
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            return new ModelAndView(model, "profesor/materia_detalle.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== ASIGNAR FECHA DE EXAMEN (CON VALIDACIONES) ====================
+
+        post("/profesor/materias/fechas", (req, res) -> {
+            String materiaIdStr = req.queryParams("materia_id");
+            String instancia = req.queryParams("instancia");
+            String fecha = req.queryParams("fecha"); // Formato nativo HTML: YYYY-MM-DD
+            String redirectUrl = "/profesor/materias/" + materiaIdStr;
+
+            if (materiaIdStr == null || instancia == null || fecha == null || fecha.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
+
+                // Obtenemos la carrera a la que pertenece la materia mediante el Plan de Estudio
+                com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio
+                        .findById(materia.get("plan_de_estudio_id"));
+                if (plan == null) {
+                    res.redirect(redirectUrl + "?error=La+materia+no+tiene+un+plan+de+estudio+asociado");
+                    return "";
+                }
+                Object carreraId = plan.get("carrera_id");
+
+                // REGLA 1: Validar que la fecha esté dentro de un rango/periodo permitido por el Admin para esta carrera
+                long dentroDePeriodo = com.is1.proyecto.models.PeriodoExamen.count(
+                        "carrera_id = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
+                        carreraId, fecha, fecha);
+
+                if (dentroDePeriodo == 0) {
+                    res.redirect(redirectUrl
+                            + "?error=La+fecha+seleccionada+no+corresponde+a+ningun+calendario+academico+configurado+por+el+admin.");
+                    return "";
+                }
+
+                // REGLA 2: Validar que no haya más de 2 exámenes el mismo día para la misma carrera
+                long examenesEseDia = com.is1.proyecto.models.FechaExamen.count(
+                        "fecha = ? AND materia_id IN (SELECT id FROM materia WHERE plan_de_estudio_id IN (SELECT id FROM plan_de_estudio WHERE carrera_id = ?))",
+                        fecha, carreraId);
+
+                if (examenesEseDia >= 2) {
+                    res.redirect(redirectUrl
+                            + "?error=Cupo+de+examenes+completo.+Ya+hay+2+parciales+programados+para+esta+carrera+el+mismo+dia.");
+                    return "";
+                }
+
+                // Si pasa las dos reglas de negocio, se guarda de forma segura
+                com.is1.proyecto.models.FechaExamen nuevaFecha = new com.is1.proyecto.models.FechaExamen();
+                nuevaFecha.set("materia_id", materia.getId());
+                nuevaFecha.set("instancia", instancia);
+                nuevaFecha.set("fecha", fecha);
+                nuevaFecha.saveIt();
+
+                res.redirect(redirectUrl + "?message=Fecha+de+examen+programada+exitosamente.");
+                return "";
+
+            } catch (Exception e) {
+                System.err.println("Error al procesar fecha de examen: " + e.getMessage());
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+fecha");
                 return "";
             }
         });
