@@ -38,12 +38,18 @@ public class App {
                     Base.close();
                 }
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
-                Base.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
-                Base.exec("CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
-                Base.exec("CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
-                Base.exec("CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
-                Base.exec("CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
-                Base.exec("CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
+                Base.exec(
+                        "CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
             } catch (Exception e) {
                 System.err.println("Error crítico en DB: " + e.getMessage());
                 halt(500, "Error interno de conexión.");
@@ -101,18 +107,53 @@ public class App {
             Map<String, Object> model = new HashMap<>();
             String currentUsername = req.session().attribute("currentUserUsername");
             Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango"); // Traemos el rango de la sesión
 
             if (currentUsername == null || loggedIn == null || !loggedIn) {
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                res.redirect("/?error=Debes iniciar sesión para acceder a esta página.");
                 return null;
             }
 
             model.put("username", currentUsername);
-            java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
-            model.put("alumnos", listaAlumnos);
 
-            return new ModelAndView(model, "admin/dashboard.mustache");
+            // Redirigir según el rango del usuario
+            if ("Admin".equals(rango)) {
+                java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos = com.is1.proyecto.models.Alumno.findAll();
+                model.put("alumnos", listaAlumnos);
+                return new ModelAndView(model, "admin/dashboard.mustache");
+
+            } else if ("Profesor".equals(rango)) {
+                return new ModelAndView(model, "profesor/dashboard_profesor.mustache");
+
+            } else if ("Alumno".equals(rango)) {
+                return new ModelAndView(model, "alumno/dashboard_alumno.mustache");
+            }
+
+            // Si el rango no coincide con nada, lo mandamos al login por seguridad
+            res.redirect("/");
+            return null;
         }, new MustacheTemplateEngine());
+
+        /*
+         * get("/dashboard", (req, res) -> {
+         * Map<String, Object> model = new HashMap<>();
+         * String currentUsername = req.session().attribute("currentUserUsername");
+         * Boolean loggedIn = req.session().attribute("loggedIn");
+         * 
+         * if (currentUsername == null || loggedIn == null || !loggedIn) {
+         * res.redirect("/login?error=Debes iniciar sesión para acceder a esta página."
+         * );
+         * return null;
+         * }
+         * 
+         * model.put("username", currentUsername);
+         * java.util.List<com.is1.proyecto.models.Alumno> listaAlumnos =
+         * com.is1.proyecto.models.Alumno.findAll();
+         * model.put("alumnos", listaAlumnos);
+         * 
+         * return new ModelAndView(model, "admin/dashboard.mustache");
+         * }, new MustacheTemplateEngine());
+         */
 
         get("/alumno/create", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -151,7 +192,8 @@ public class App {
 
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
+                    .findAll();
 
             // Creamos una lista de Mapas flexibles para no enojar a ActiveJDBC
             java.util.List<Map<String, Object>> planesVista = new java.util.ArrayList<>();
@@ -511,7 +553,7 @@ public class App {
         // ==================== CARRERA - LISTAR ====================
         get("/carrera/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            
+
             // Busca todas las carreras en la base de datos
             java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
             model.put("carreras", carreras);
@@ -521,8 +563,9 @@ public class App {
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
-            
-            // Atrapa mensajes de error (cuando intentas borrar una carrera con planes, por ejemplo)
+
+            // Atrapa mensajes de error (cuando intentas borrar una carrera con planes, por
+            // ejemplo)
             String errorMessage = req.queryParams("error");
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
@@ -1007,4 +1050,4 @@ public class App {
             }
         });
     } // Fin del método main
-} // Fin de la clase App 
+} // Fin de la clase App
