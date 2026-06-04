@@ -149,30 +149,31 @@ public class App {
             return new ModelAndView(new HashMap<>(), "gestion/gestion_carreras.mustache");
         }, new MustacheTemplateEngine());
 
-        get("/carrera/list", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
-            model.put("carreras", carreras);
-
-            String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
-                model.put("successMessage", successMessage);
-            }
-            return new ModelAndView(model, "gestion/carrera_list.mustache");
-        }, new MustacheTemplateEngine());
-
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
 
+            // Creamos una lista de Mapas flexibles para no enojar a ActiveJDBC
+            java.util.List<Map<String, Object>> planesVista = new java.util.ArrayList<>();
+
             for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
+                // Convertimos el modelo estricto a un mapa flexible
+                Map<String, Object> planMap = new HashMap<>(plan.toMap());
+                
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
                 if (carrera != null) {
-                    plan.set("carrera_nombre", carrera.getNombre());
+                    // Ahora podemos inyectar un dato inventado sin problemas
+                    planMap.put("carrera_nombre", carrera.getNombre());
+                } else {
+                    planMap.put("carrera_nombre", "Sin carrera");
                 }
+                
+                // Agregamos el mapa a nuestra nueva lista
+                planesVista.add(planMap);
             }
 
-            model.put("planes", planes);
+            // Pasamos nuestra nueva lista flexible a la vista
+            model.put("planes", planesVista);
 
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
@@ -528,7 +529,7 @@ public class App {
             }
 
             // Renderiza la vista (Nota: sin la carpeta "gestion/" para que la encuentre bien)
-            return new ModelAndView(model, "carrera_list.mustache");
+            return new ModelAndView(model, "gestion/carrera_list.mustache");
         }, new MustacheTemplateEngine());
         
         // ==================== CARRERA - CREAR ====================
@@ -542,7 +543,7 @@ public class App {
                 model.put("errorMessage", errorMessage);
             }
 
-            return new ModelAndView(model, "carrera_form.mustache");
+            return new ModelAndView(model, "gestion/carrera_form.mustache");
         }, new MustacheTemplateEngine());
 
         // Procesa los datos del formulario y los guarda en SQLite usando ActiveJDBC
@@ -608,7 +609,7 @@ public class App {
                 model.put("errorMessage", errorMessage);
             }
 
-            return new ModelAndView(model, "carrera_edit.mustache");
+            return new ModelAndView(model, "gestion/carrera_edit.mustache");
         }, new MustacheTemplateEngine());
 
         // Procesa los cambios y los guarda en la base de datos
@@ -672,6 +673,104 @@ public class App {
                 }
             }
             return null;
+        });
+
+        // ==================== PLAN DE ESTUDIO - CREAR ====================
+        
+        // Mostrar el formulario
+        get("/plan/create", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            // Necesitamos enviar todas las carreras a la vista para armar el menú desplegable (Select)
+            java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
+            model.put("carreras", carreras);
+
+            // Manejo de mensajes de error
+            String errorKey = req.queryParams("error");
+            if (errorKey != null && !errorKey.isEmpty()) {
+                String message = "Ocurrió un error inesperado.";
+                
+                switch (errorKey) {
+                    case "empty_fields":
+                        message = "El año de vigencia y la carrera son obligatorios.";
+                        break;
+                    case "invalid_range":
+                        message = "El año de vigencia no es válido (debe ser entre 1900 y 2100).";
+                        break;
+                    case "duplicate":
+                        message = "Ya existe un plan de estudio para esa carrera en ese año.";
+                        break;
+                    case "not_a_number":
+                        message = "El año de vigencia debe ser un número válido.";
+                        break;
+                    case "internal_error":
+                        message = "Error interno del sistema al intentar guardar el plan.";
+                        break;
+                }
+                model.put("errorMessage", message);
+            }
+
+            return new ModelAndView(model, "gestion/plan_form.mustache"); 
+        }, new MustacheTemplateEngine());
+
+        // Procesar los datos y guardar
+        post("/plan/create", (req, res) -> {
+            String anioVigencia = req.queryParams("anio_vigencia");
+            String carreraId = req.queryParams("carrera_id");
+            String activoStr = req.queryParams("activo"); 
+            
+            // Si el checkbox está marcado, Spark recibe "on". Si no, recibe null.
+            int activo = (activoStr != null && activoStr.equals("on")) ? 1 : 0;
+            
+            String redirectUrl = "/plan/create";
+
+            // Validaciones básicas
+            if (anioVigencia == null || anioVigencia.trim().isEmpty() || 
+                carreraId == null || carreraId.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=El+anio+de+vigencia+y+la+carrera+son+obligatorios");
+                return "";
+            }
+
+            try {
+                int anio = Integer.parseInt(anioVigencia);
+                int idCarrera = Integer.parseInt(carreraId);
+
+                if (anio < 1900 || anio > 2100) {
+                    res.redirect(redirectUrl + "?error=invalid_range");
+                    return "";
+                }
+
+                // Buscamos si ya existe un plan con esa carrera Y ese mismo año
+                com.is1.proyecto.models.PlanDeEstudio planExistente = com.is1.proyecto.models.PlanDeEstudio.findFirst(
+                    "carrera_id = ? AND anio_vigencia = ?", 
+                    idCarrera, 
+                    anio
+                );
+
+                if (planExistente != null) {
+                    // Si encontramos uno, frenamos todo y devolvemos un error a la vista
+                    res.redirect(redirectUrl + "?error=Ya+existe+un+plan+de+estudio+para+esa+carrera+en+ese+anio");
+                    return "";
+                }
+                // Instanciamos y guardamos el nuevo plan usando ActiveJDBC
+                com.is1.proyecto.models.PlanDeEstudio nuevoPlan = new com.is1.proyecto.models.PlanDeEstudio();
+                nuevoPlan.set("anio_vigencia", Integer.parseInt(anioVigencia));
+                nuevoPlan.set("carrera_id", Integer.parseInt(carreraId));
+                nuevoPlan.set("activo", activo);
+                nuevoPlan.saveIt();
+
+                res.status(201);
+                res.redirect("/plan/list?message=Plan+de+estudio+creado+exitosamente");
+                return "";
+
+            } catch (NumberFormatException e) {
+                res.redirect(redirectUrl + "?error=El+anio+de+vigencia+debe+ser+un+numero+valido");
+                return "";
+            } catch (Exception e) {
+                System.err.println("Error al registrar el plan: " + e.getMessage());
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+el+plan");
+                return "";
+            }
         });
     } // Fin del método main
 } // Fin de la clase App 
