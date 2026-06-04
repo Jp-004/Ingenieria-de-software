@@ -1,28 +1,26 @@
 package com.is1.proyecto; // Define el paquete de la aplicación, debe coincidir con la estructura de carpetas.
 
 // Importaciones necesarias para la aplicación Spark
-import com.fasterxml.jackson.databind.ObjectMapper; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
-import static spark.Spark.*; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
+import java.util.HashMap; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
+import java.util.Map; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
 
-// Importaciones específicas para ActiveJDBC (ORM para la base de datos)
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
 
-// Importaciones de Spark para renderizado de plantillas
-import spark.ModelAndView; // Representa un modelo de datos y el nombre de la vista a renderizar.
-import spark.template.mustache.MustacheTemplateEngine; // Motor de plantillas Mustache para Spark.
+import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
+import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.models.Alumno; // Para crear mapas de datos (modelos para las plantillas).
+import com.is1.proyecto.models.Profesor; // Interfaz Map, utilizada para Map.of() o HashMap.
+import com.is1.proyecto.models.User; // Clase Singleton para la configuración de la base de datos.
 
-// Importaciones estándar de Java
-import java.util.HashMap; // Para crear mapas de datos (modelos para las plantillas).
-import java.util.Map; // Interfaz Map, utilizada para Map.of() o HashMap.
-
-// Importaciones de clases del proyecto
-import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
-import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
-
-import com.is1.proyecto.models.Profesor; // <--- AGREGAR ESTO
-import com.is1.proyecto.models.User;
-import com.is1.proyecto.models.Alumno;
+import spark.ModelAndView; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import static spark.Spark.after; // <--- AGREGAR ESTO
+import static spark.Spark.before;
+import static spark.Spark.get;
+import static spark.Spark.halt;
+import static spark.Spark.port;
+import static spark.Spark.post;
+import spark.template.mustache.MustacheTemplateEngine;
 
 /**
  * Clase principal de la aplicación Spark.
@@ -574,5 +572,148 @@ public class App {
     
             return new ModelAndView(model, "materia_list.mustache");
         }, new MustacheTemplateEngine());
+
+        // ==================== CARRERA - CREAR ====================
+        // Muestra el formulario para crear una nueva carrera
+        get("/carrera/create", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            // Manejo de mensajes de error o éxito pasados por URL
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            return new ModelAndView(model, "carrera_form.mustache");
+        }, new MustacheTemplateEngine());
+
+        // Procesa los datos del formulario y los guarda en SQLite usando ActiveJDBC
+        post("/carrera/create", (req, res) -> {
+            String nombre = req.queryParams("nombre");
+            String codigo = req.queryParams("codigo");
+            String redirectUrl = "/carrera/create";
+
+            // Validaciones básicas de campos vacíos
+            if (nombre == null || nombre.trim().isEmpty() || codigo == null || codigo.trim().isEmpty()) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                // Validación para evitar códigos duplicados
+                boolean codigoExiste = com.is1.proyecto.models.Carrera.findFirst("codigo = ?", codigo) != null;
+                if (codigoExiste) {
+                    res.redirect(redirectUrl + "?error=El+codigo+de+carrera+ya+existe");
+                    return "";
+                }
+
+                // Guardado en la base de datos
+                com.is1.proyecto.models.Carrera nuevaCarrera = new com.is1.proyecto.models.Carrera();
+                nuevaCarrera.setNombre(nombre);
+                nuevaCarrera.setCodigo(codigo);
+                nuevaCarrera.saveIt(); // ActiveJDBC hace el INSERT de manera automática
+
+                // Redirección exitosa al listado de carreras
+                res.status(201);
+                res.redirect("/carrera/list?message=Carrera+creada+exitosamente");
+                return "";
+
+            } catch (Exception e) {
+                System.err.println("Error al registrar la carrera: " + e.getMessage());
+                e.printStackTrace();
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+carrera");
+                return "";
+            }
+        });
+
+        // ==================== CARRERA - MODIFICAR ====================
+        // Muestra el formulario con los datos cargados de la carrera a editar
+        get("/carrera/edit", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String idStr = req.queryParams("id");
+
+            if (idStr == null || idStr.isEmpty()) {
+                res.redirect("/carrera/list?error=ID+de+carrera+no+proporcionado");
+                return null;
+            }
+
+            com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(idStr);
+            if (carrera == null) {
+                res.redirect("/carrera/list?error=Carrera+no+encontrada");
+                return null;
+            }
+
+            model.put("carrera", carrera);
+            
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            return new ModelAndView(model, "carrera_edit.mustache");
+        }, new MustacheTemplateEngine());
+
+        // Procesa los cambios y los guarda en la base de datos
+        post("/carrera/edit", (req, res) -> {
+            String idStr = req.queryParams("id");
+            String nombre = req.queryParams("nombre");
+            String codigo = req.queryParams("codigo");
+
+            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+                res.redirect("/carrera/edit?id=" + idStr + "&error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(idStr);
+                if (carrera != null) {
+                    // Validar que el nuevo código no le pertenezca ya a otra carrera distinta
+                    com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera.findFirst("codigo = ?", codigo);
+                    if (carreraExistente != null && !carreraExistente.getId().toString().equals(idStr)) {
+                         res.redirect("/carrera/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+carrera");
+                         return "";
+                    }
+
+                    carrera.setNombre(nombre);
+                    carrera.setCodigo(codigo);
+                    carrera.saveIt();
+                    res.redirect("/carrera/list?message=Carrera+actualizada+exitosamente");
+                } else {
+                    res.redirect("/carrera/list?error=Carrera+no+encontrada");
+                }
+            } catch (Exception e) {
+                System.err.println("Error al actualizar la carrera: " + e.getMessage());
+                res.redirect("/carrera/edit?id=" + idStr + "&error=Error+interno+al+actualizar");
+            }
+            return "";
+        });
+
+        // ==================== CARRERA - ELIMINAR ====================
+        // Elimina la carrera seleccionada (siempre y cuando no tenga planes asociados)
+        get("/carrera/delete", (req, res) -> {
+            String idStr = req.queryParams("id");
+            if (idStr != null && !idStr.isEmpty()) {
+                try {
+                    com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(idStr);
+                    if (carrera != null) {
+                        // Regla de negocio: No permitir eliminar si hay Planes de Estudio asociados
+                        long planesAsociados = com.is1.proyecto.models.PlanDeEstudio.count("carrera_id = ?", idStr);
+                        if (planesAsociados > 0) {
+                             res.redirect("/carrera/list?error=No+se+puede+eliminar+la+carrera+porque+tiene+planes+de+estudio+activos");
+                             return null;
+                        }
+
+                        carrera.delete();
+                        res.redirect("/carrera/list?message=Carrera+eliminada+exitosamente");
+                    } else {
+                        res.redirect("/carrera/list?error=Carrera+no+encontrada");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al eliminar la carrera: " + e.getMessage());
+                    res.redirect("/carrera/list?error=Error+al+eliminar+la+carrera");
+                }
+            }
+            return null;
+        });
     } // Fin del método main
 } // Fin de la clase App
