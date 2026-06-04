@@ -3,82 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Materia</title>
+    <title>Administración de Materias</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
 </head>
 <body class="bg-gray-50">
-    <div class="min-h-screen p-4 flex items-center justify-center">
-        <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+    <div class="min-h-screen p-4">
+        <div class="max-w-4xl mx-auto">
             
-            <div class="mb-8 text-center">
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Registrar Nueva Materia</h1>
-                <p class="text-gray-600">Completa los datos académicos y técnicos de la asignatura</p>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Administración de Materias</h1>
+                    <p class="text-gray-600">Listado, alta y baja de las materias de la facultad</p>
+                </div>
+                <a href="/materias/nueva" class="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 transition font-medium shadow">
+                    <i class="ti ti-plus"></i> Nueva Materia
+                </a>
             </div>
 
-            <form action="/materias/guardar-completa" method="post" class="space-y-5">
-                
-                <div>
-                    <label for="nombre" class="block text-sm font-semibold text-gray-800 mb-2">
-                        <i class="ti ti-book text-blue-600 mr-1"></i> Nombre de la Materia
-                    </label>
-                    <input type="text" id="nombre" name="nombre" required placeholder="Ej: Sistemas Operativos"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
+            <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 border-b border-gray-200 text-gray-700 text-sm font-semibold">
+                            <th class="p-4">Nombre</th>
+                            <th class="p-4">Código</th>
+                            <th class="p-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-gray-800">
+                        {{#materias}}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="p-4 font-medium">{{nombre}}</td>
+                            <td class="p-4"><span class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs font-mono">{{codigo}}</span></td>
+                            <td class="p-4 flex justify-center gap-2">
+                                <form action="/materias/eliminar" method="post" onsubmit="return confirm('¿Seguro querés eliminar esta materia?');">
+                                    <input type="hidden" name="materia_id" value="{{id}}">
+                                    <button type="submit" class="flex items-center gap-1 bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-md text-sm font-medium transition">
+                                        <i class="ti ti-trash"></i> Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {{/materias}}
+                        {{^materias}}
+                        <tr>
+                            <td colspan="3" class="p-8 text-center text-gray-500">
+                                <i class="ti ti-folder-off text-4xl block mb-2 text-gray-400"></i>
+                                No hay ninguna materia registrada todavía.
+                            </td>
+                        </tr>
+                        {{/materias}}
+                    </tbody>
+                </table>
+            </div>
 
-                <div>
-                    <label for="codigo" class="block text-sm font-semibold text-gray-800 mb-2">
-                        <i class="ti ti-barcode text-blue-600 mr-1"></i> Código Único
-                    </label>
-                    <input type="text" id="codigo" name="codigo" required placeholder="Ej: SO2026"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                </div>
+            <div class="mt-6">
+                <a href="/dashboard" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 transition font-medium">
+                    <i class="ti ti-arrow-left"></i> Volver al Panel de Control
+                </a>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="plan_de_estudio_id" class="block text-sm font-semibold text-gray-800 mb-2">
-                            <i class="ti ti-certificate text-blue-600 mr-1"></i> Plan de Estudio
-                        </label>
-                        <select id="plan_de_estudio_id" name="plan_de_estudio_id" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                            <option value="" disabled selected>Seleccioná un plan...</option>
-                            {{#planes}}
-                            <option value="{{id}}">Plan Año {{anio_vigencia}} (ID: {{id}})</option>
-                            {{/planes}}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="horas" class="block text-sm font-semibold text-gray-800 mb-2">
-                            <i class="ti ti-clock text-blue-600 mr-1"></i> Cantidad de Horas
-                        </label>
-                        <input type="number" id="horas" name="horas" required min="1" placeholder="Ej: 60"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="docente_id" class="block text-sm font-semibold text-gray-800 mb-2">
-                        <i class="ti ti-user-check text-blue-600 mr-1"></i> Docente Asignado
-                    </label>
-                    <select id="docente_id" name="docente_id" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                        <option value="" disabled selected>Seleccioná un profesor de la base de datos...</option>
-                        {{#docentes}}
-                        <option value="{{id}}">{{nombre}} {{apellido}} (DNI: {{dni}})</option>
-                        {{/docentes}}
-                    </select>
-                </div>
-
-                <div class="flex gap-3 pt-4 border-t border-gray-100">
-                    <button type="submit" class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium">
-                        <i class="ti ti-device-floppy"></i> Guardar Materia
-                    </button>
-                    <a href="/materias/panel-gestion" class="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-medium">
-                        <i class="ti ti-x"></i> Cancelar
-                    </a>
-                </div>
-            </form>
         </div>
     </div>
 </body>
