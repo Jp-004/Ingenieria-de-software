@@ -1,0 +1,8 @@
+# Maven build output
+target/
+
+# Base de datos local
+*.db
+
+# Archivos compilados
+*.class
