@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Plan de Estudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
+    <style>
+        /* Animación suave para desplegar el apartado de horas */
+        .oculto { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="min-h-screen p-4 flex flex-col items-center py-10">
+        
+        <div class="w-full max-w-4xl flex justify-between items-center mb-6">
+            <a href="/plan/list" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
+                <i class="ti ti-arrow-left"></i> Volver a la lista
+            </a>
+        </div>
+
+        <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            
+            <div class="bg-blue-600 text-white px-8 py-6">
+                <h1 class="text-3xl font-bold flex items-center gap-3">
+                    <i class="ti ti-notebook"></i> 
+                    Plan de Estudio: {{plan.carrera_nombre}}
+                </h1>
+                <p class="text-blue-100 mt-2 text-lg">Año de vigencia: <span class="font-semibold">{{plan.anio_vigencia}}</span> | ID Interno: {{plan.id}}</p>
+            </div>
+
+            <div class="p-8 space-y-8">
+                
+                {{#message}}
+                <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm flex items-center gap-2">
+                    <i class="ti ti-check bg-green-100 p-1 rounded-full text-xl"></i>
+                    <p class="font-medium">{{message}}</p>
+                </div>
+                {{/message}}
+                
+                {{#error}}
+                <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm flex items-center gap-2">
+                    <i class="ti ti-alert-triangle bg-red-100 p-1 rounded-full text-xl"></i>
+                    <p class="font-medium">{{error}}</p>
+                </div>
+                {{/error}}
+
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="ti ti-plus text-blue-600"></i> 1. Agregar Materia al Plan
+                    </h2>
+                    
+                    <form action="/plan/edit/agregar-materia?id={{plan.id}}" method="POST" class="space-y-5">            
+                        <div>
+                            <label for="materia_id" class="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Materia a Añadir:</label>
+                            <select name="materia_id" id="materia_id" onchange="mostrarSubApartado()" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                <option value="">-- Seleccione una materia disponible --</option>
+                                {{#materiasDisponibles}}
+                                    <option value="{{id}}">{{nombre}} ({{codigo}})</option>
+                                {{/materiasDisponibles}}
+                                {{^materiasDisponibles}}
+                                    <option value="" disabled>No hay más materias disponibles para agregar</option>
+                                {{/materiasDisponibles}}
+                            </select>
+                        </div>
+
+                        <div id="sub-apartado" class="oculto bg-white p-5 rounded-lg border border-blue-100 shadow-inner mt-4">
+                            <div class="mb-5">
+                                <label for="horas" class="block text-sm font-semibold text-gray-700 mb-2">Cantidad de Horas Cátedra / Semanales:</label>
+                                <input type="number" name="horas" id="horas" min="1" placeholder="Ej: 96" class="w-full md:w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            </div>
+                            
+                            <div class="mb-5">
+                                <label for="correlativas" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Seleccionar Correlativas 
+                                    <span class="text-xs font-normal text-gray-500 block">(Mantener 'Ctrl' para seleccionar varias)</span>
+                                </label>
+                                <select name="correlativas_ids" id="correlativas" multiple size="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                                    {{#materiasEnPlan}}
+                                        <option value="{{id}}" class="p-1 border-b border-gray-100">{{nombre}}</option>
+                                    {{/materiasEnPlan}}
+                                    {{^materiasEnPlan}}
+                                        <option value="" disabled>Aún no hay materias en el plan para asignar como correlativas</option>
+                                    {{/materiasEnPlan}}
+                                </select>
+                            </div>
+
+                            <button type="submit" class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                                <i class="ti ti-device-floppy"></i> Guardar e Incorporar al Plan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <hr class="border-gray-200">
+
+                <div class="bg-white rounded-lg p-6 border border-red-100">
+                    <h2 class="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                        <i class="ti ti-trash"></i> 2. Quitar Materia del Plan
+                    </h2>
+                    <form action="/plan/edit/{{plan.id}}/quitar-materia" method="POST" onsubmit="return confirmarQuitar()" class="flex flex-col md:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full">
+                            <label for="materia_quitar" class="block text-sm font-semibold text-gray-700 mb-2">Seleccionar Materia a Eliminar de este Plan:</label>
+                            <select name="materia_id" id="materia_quitar" required class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+                                <option value="">-- Seleccione una materia del plan --</option>
+                                {{#materiasEnPlan}}
+                                    <option value="{{id}}">{{nombre}}</option>
+                                {{/materiasEnPlan}}
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full md:w-auto bg-red-100 text-red-700 border border-red-300 px-6 py-3 rounded-lg hover:bg-red-200 transition font-medium flex items-center justify-center gap-2">
+                            <i class="ti ti-unlink"></i> Desvincular del Plan
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function mostrarSubApartado() {
+            var select = document.getElementById('materia_id');
+            var subApartado = document.getElementById('sub-apartado');
+            if (select.value !== "") {
+                subApartado.classList.remove('oculto');
+            } else {
+                subApartado.classList.add('oculto');
+                document.getElementById('horas').value = ''; 
+            }
+        }
+
+        function confirmarQuitar() {
+            return confirm('¡Atención! ¿Estás seguro de que querés quitar esta materia del plan? También se borrarán las correlatividades asociadas a ella.');
+        }
+    </script>
+</body>
+</html>
