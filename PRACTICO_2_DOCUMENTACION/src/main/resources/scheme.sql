@@ -33,8 +33,7 @@ CREATE TABLE materia (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
     codigo TEXT NOT NULL UNIQUE,
-    plan_de_estudio_id INTEGER,
-    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id)
+    docente_id INTEGER
 );
 
 CREATE TABLE profesor (
@@ -95,4 +94,23 @@ CREATE TABLE IF NOT EXISTS fecha_examen (
     instancia VARCHAR(50) NOT NULL,
     fecha TEXT NOT NULL,
     FOREIGN KEY (materia_id) REFERENCES materia(id)
+);
+
+CREATE TABLE materias_planes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_de_estudio_id INTEGER NOT NULL,
+    materia_id INTEGER NOT NULL,
+    horas INTEGER NOT NULL,
+    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id) ON DELETE CASCADE,
+    FOREIGN KEY (materia_id) REFERENCES materia(id) ON DELETE CASCADE
+);
+
+CREATE TABLE correlatividades (
+    plan_de_estudio_id INTEGER NOT NULL,
+    materia_id INTEGER NOT NULL,
+    correlativa_id INTEGER NOT NULL,
+    PRIMARY KEY (plan_de_estudio_id, materia_id, correlativa_id),
+    FOREIGN KEY (plan_de_estudio_id) REFERENCES plan_de_estudio(id) ON DELETE CASCADE,
+    FOREIGN KEY (materia_id) REFERENCES materia(id) ON DELETE CASCADE,
+    FOREIGN KEY (correlativa_id) REFERENCES materia(id) ON DELETE CASCADE
 );

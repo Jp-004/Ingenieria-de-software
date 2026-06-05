@@ -9,6 +9,7 @@ import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contrase
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.controllers.PlanDeEstudioController;
 import com.is1.proyecto.models.Alumno; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Materia; // Interfaz Map, utilizada para Map.of() o HashMap.
 import com.is1.proyecto.models.Profesor; // Clase Singleton para la configuración de la base de datos.
@@ -38,18 +39,7 @@ public class App {
                     Base.close();
                 }
                 Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, password TEXT NOT NULL, rango TEXT NOT NULL);");
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS carrera (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE);");
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS plan_de_estudio (id INTEGER PRIMARY KEY AUTOINCREMENT, anio_vigencia INTEGER NOT NULL, activo INTEGER NOT NULL DEFAULT 1, carrera_id INTEGER NOT NULL);");
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS materia (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT NOT NULL UNIQUE, plan_de_estudio_id INTEGER, docente_id INTEGER, base_datos TEXT, horas INTEGER);");
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS profesor (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE);");
-                Base.exec(
-                        "CREATE TABLE IF NOT EXISTS alumno (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE, dni TEXT NOT NULL UNIQUE, legajo INTEGER NOT NULL UNIQUE, fecha_ingreso TEXT NOT NULL, estado_academico TEXT NOT NULL DEFAULT 'Activo', carrera_id INTEGER);");
+                // ¡Eliminamos los CREATE TABLE de acá porque ahora los maneja tu scheme.sql!
             } catch (Exception e) {
                 System.err.println("Error crítico en DB: " + e.getMessage());
                 halt(500, "Error interno de conexión.");
@@ -201,7 +191,7 @@ public class App {
             for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
                 // Convertimos el modelo estricto a un mapa flexible
                 Map<String, Object> planMap = new HashMap<>(plan.toMap());
-                
+
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
                 if (carrera != null) {
                     // Ahora podemos inyectar un dato inventado sin problemas
@@ -209,7 +199,7 @@ public class App {
                 } else {
                     planMap.put("carrera_nombre", "Sin carrera");
                 }
-                
+
                 // Agregamos el mapa a nuestra nueva lista
                 planesVista.add(planMap);
             }
@@ -228,17 +218,30 @@ public class App {
             Map<String, Object> model = new HashMap<>();
             java.util.List<com.is1.proyecto.models.Materia> materias = com.is1.proyecto.models.Materia.findAll();
 
+            // Creamos una lista de mapas para no enojar a ActiveJDBC (igual que hicimos con
+            // planes)
+            java.util.List<Map<String, Object>> materiasVista = new java.util.ArrayList<>();
+
             for (com.is1.proyecto.models.Materia materia : materias) {
-                int planId = materia.getPlanDeEstudioId();
-                if (planId > 0) {
-                    com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
-                    if (plan != null) {
-                        materia.set("plan_de_estudio_nombre", "Plan " + plan.getAnioVigencia());
-                    }
+                Map<String, Object> matMap = new HashMap<>(materia.toMap());
+
+                // Buscamos si la materia está asignada a algún plan mediante la tabla
+                // intermedia
+                java.util.List<java.util.Map> relaciones = org.javalite.activejdbc.Base.findAll(
+                        "SELECT p.anio_vigencia FROM materias_planes mp INNER JOIN plan_de_estudio p ON mp.plan_de_estudio_id = p.id WHERE mp.materia_id = ?",
+                        materia.getId());
+
+                if (!relaciones.isEmpty()) {
+                    // Si está en un plan, sacamos el año de vigencia
+                    matMap.put("plan_de_estudio_nombre", "Plan " + relaciones.get(0).get("anio_vigencia"));
+                } else {
+                    matMap.put("plan_de_estudio_nombre", "Sin plan asignado");
                 }
+
+                materiasVista.add(matMap);
             }
 
-            model.put("materias", materias);
+            model.put("materias", materiasVista);
 
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
@@ -504,30 +507,52 @@ public class App {
 
         post("/materias/guardar-completa", (req, res) -> {
             try {
+                // 1. Recibimos los datos del formulario (Mustache)
                 String nombre = req.queryParams("nombre");
                 String codigo = req.queryParams("codigo");
                 String planId = req.queryParams("plan_de_estudio_id");
                 String horas = req.queryParams("horas");
                 String docenteId = req.queryParams("docente_id");
 
+                // 2. Validamos que lo principal no sea nulo
+                if (nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+                    res.redirect("/materias/panel-gestion?error=Faltan+datos+obligatorios+(nombre+o+codigo)");
+                    return null;
+                }
+
+                // 3. Guardar primero la Materia en la base de datos
                 Materia nueva = new Materia();
                 nueva.set("nombre", nombre);
                 nueva.set("codigo", codigo);
-                nueva.set("horas", Integer.parseInt(horas));
 
-                if (planId != null && !planId.isEmpty()) {
-                    nueva.set("plan_de_estudio_id", Integer.parseInt(planId));
-                }
+                // Si mandaron un docente, lo convertimos a número y lo guardamos
                 if (docenteId != null && !docenteId.isEmpty()) {
                     nueva.set("docente_id", Integer.parseInt(docenteId));
                 }
-                nueva.saveIt();
 
-                res.redirect("/materias/panel-gestion");
+                nueva.saveIt(); // Guardamos en BD. Acá ActiveJDBC le genera el nueva.getId() automáticamente.
+
+                // 4. Si mandaron un Plan y Horas, armamos la relación en la tabla intermedia
+                // materias_planes
+                if (planId != null && !planId.isEmpty() && horas != null && !horas.isEmpty()) {
+                    org.javalite.activejdbc.Base.exec(
+                            "INSERT INTO materias_planes (plan_de_estudio_id, materia_id, horas) VALUES (?, ?, ?)",
+                            Integer.parseInt(planId), nueva.getId(), Integer.parseInt(horas));
+                }
+
+                res.redirect("/materias/panel-gestion?message=Materia+registrada+exitosamente");
+                return null;
+
+            } catch (NumberFormatException nfe) {
+                // Esto atrapa el error si se manda un texto en lugar de un número (o un null
+                // oculto)
+                System.err.println("Error de formato de numero: " + nfe.getMessage());
+                res.redirect("/materias/panel-gestion?error=Error:+Revisar+que+las+horas+y+los+IDs+sean+numericos");
                 return null;
             } catch (Exception e) {
                 System.err.println("Error al insertar materia completa: " + e.getMessage());
-                res.redirect("/materias/panel-gestion?error=Error al registrar la asignatura.");
+                e.printStackTrace(); // Imprime el error completo en tu terminal para verlo en detalle
+                res.redirect("/materias/panel-gestion?error=Error+interno+al+registrar+la+asignatura.");
                 return null;
             }
         });
@@ -722,12 +747,13 @@ public class App {
         });
 
         // ==================== PLAN DE ESTUDIO - CREAR ====================
-        
+
         // Mostrar el formulario
         get("/plan/create", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
 
-            // Necesitamos enviar todas las carreras a la vista para armar el menú desplegable (Select)
+            // Necesitamos enviar todas las carreras a la vista para armar el menú
+            // desplegable (Select)
             java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
             model.put("carreras", carreras);
 
@@ -735,7 +761,7 @@ public class App {
             String errorKey = req.queryParams("error");
             if (errorKey != null && !errorKey.isEmpty()) {
                 String message = "Ocurrió un error inesperado.";
-                
+
                 switch (errorKey) {
                     case "empty_fields":
                         message = "El año de vigencia y la carrera son obligatorios.";
@@ -756,23 +782,23 @@ public class App {
                 model.put("errorMessage", message);
             }
 
-            return new ModelAndView(model, "gestion/plan_form.mustache"); 
+            return new ModelAndView(model, "gestion/plan_form.mustache");
         }, new MustacheTemplateEngine());
 
         // Procesar los datos y guardar
         post("/plan/create", (req, res) -> {
             String anioVigencia = req.queryParams("anio_vigencia");
             String carreraId = req.queryParams("carrera_id");
-            String activoStr = req.queryParams("activo"); 
-            
+            String activoStr = req.queryParams("activo");
+
             // Si el checkbox está marcado, Spark recibe "on". Si no, recibe null.
             int activo = (activoStr != null && activoStr.equals("on")) ? 1 : 0;
-            
+
             String redirectUrl = "/plan/create";
 
             // Validaciones básicas
-            if (anioVigencia == null || anioVigencia.trim().isEmpty() || 
-                carreraId == null || carreraId.trim().isEmpty()) {
+            if (anioVigencia == null || anioVigencia.trim().isEmpty() ||
+                    carreraId == null || carreraId.trim().isEmpty()) {
                 res.redirect(redirectUrl + "?error=empty_fields");
                 return "";
             }
@@ -788,10 +814,9 @@ public class App {
 
                 // Buscamos si ya existe un plan con esa carrera Y ese mismo año
                 com.is1.proyecto.models.PlanDeEstudio planExistente = com.is1.proyecto.models.PlanDeEstudio.findFirst(
-                    "carrera_id = ? AND anio_vigencia = ?", 
-                    idCarrera, 
-                    anio
-                );
+                        "carrera_id = ? AND anio_vigencia = ?",
+                        idCarrera,
+                        anio);
 
                 if (planExistente != null) {
                     // Si encontramos uno, frenamos todo y devolvemos un error a la vista
@@ -930,7 +955,8 @@ public class App {
             return new ModelAndView(model, "profesor/mis_materias.mustache");
         }, new MustacheTemplateEngine());
 
-        // ==================== DETALLE DE MATERIA Y ALUMNOS INCRIPTOS ====================
+        // ==================== DETALLE DE MATERIA Y ALUMNOS INCRIPTOS
+        // ====================
 
         get("/profesor/materias/:id", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -986,7 +1012,8 @@ public class App {
             return new ModelAndView(model, "profesor/materia_detalle.mustache");
         }, new MustacheTemplateEngine());
 
-        // ==================== ASIGNAR FECHA DE EXAMEN (CON VALIDACIONES) ====================
+        // ==================== ASIGNAR FECHA DE EXAMEN (CON VALIDACIONES)
+        // ====================
 
         post("/profesor/materias/fechas", (req, res) -> {
             String materiaIdStr = req.queryParams("materia_id");
@@ -1002,7 +1029,8 @@ public class App {
             try {
                 com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
 
-                // Obtenemos la carrera a la que pertenece la materia mediante el Plan de Estudio
+                // Obtenemos la carrera a la que pertenece la materia mediante el Plan de
+                // Estudio
                 com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio
                         .findById(materia.get("plan_de_estudio_id"));
                 if (plan == null) {
@@ -1011,7 +1039,8 @@ public class App {
                 }
                 Object carreraId = plan.get("carrera_id");
 
-                // REGLA 1: Validar que la fecha esté dentro de un rango/periodo permitido por el Admin para esta carrera
+                // REGLA 1: Validar que la fecha esté dentro de un rango/periodo permitido por
+                // el Admin para esta carrera
                 long dentroDePeriodo = com.is1.proyecto.models.PeriodoExamen.count(
                         "carrera_id = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
                         carreraId, fecha, fecha);
@@ -1022,7 +1051,8 @@ public class App {
                     return "";
                 }
 
-                // REGLA 2: Validar que no haya más de 2 exámenes el mismo día para la misma carrera
+                // REGLA 2: Validar que no haya más de 2 exámenes el mismo día para la misma
+                // carrera
                 long examenesEseDia = com.is1.proyecto.models.FechaExamen.count(
                         "fecha = ? AND materia_id IN (SELECT id FROM materia WHERE plan_de_estudio_id IN (SELECT id FROM plan_de_estudio WHERE carrera_id = ?))",
                         fecha, carreraId);
@@ -1048,6 +1078,9 @@ public class App {
                 res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+fecha");
                 return "";
             }
+
         });
+
+        PlanDeEstudioController.init();
     } // Fin del método main
 } // Fin de la clase App
