@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscripción a Materias</title>
+    <style>
+        /* Estilos globales heredados del dashboard */
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border-top: 4px solid #0d6efd; /* Borde azul para seguir la temática de "Cursando" */
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #ffffff;
+        }
+
+        .header p {
+            color: #adb5bd;
+            margin-top: 10px;
+        }
+
+        /* Alertas para mensajes */
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .alert-error {
+            background-color: rgba(220, 53, 69, 0.15);
+            border: 1px solid #dc3545;
+            color: #ff6b6b;
+        }
+
+        .alert-success {
+            background-color: rgba(25, 135, 84, 0.15);
+            border: 1px solid #198754;
+            color: #20c997;
+        }
+
+        /* Tabla de materias */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #252525;
+            border-radius: 8px;
+            overflow: hidden; /* Para que los bordes redondeados apliquen a la tabla */
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background-color: #2a2a2a;
+            color: #4da3ff;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: #2c2c2c; /* Efecto hover sutil */
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #aaa;
+            font-style: italic;
+            padding: 30px !important;
+        }
+
+        /* Botones */
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .btn-green { background-color: #198754; }
+        .btn-green:hover { background-color: #157347; }
+
+        .btn-secondary { 
+            background-color: #495057; 
+            display: block; 
+            width: 200px; 
+            margin: 0 auto; 
+        }
+        .btn-secondary:hover { background-color: #343a40; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Inscripción a Materias</h1>
+            <p>Listado de asignaturas habilitadas según tu plan de estudio y correlativas aprobadas.</p>
+        </div>
+
+        {{#errorMessage}}
+            <div class="alert alert-error">{{errorMessage}}</div>
+        {{/errorMessage}}
+        
+        {{#successMessage}}
+            <div class="alert alert-success">{{successMessage}}</div>
+        {{/successMessage}}
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Materia</th>
+                    <th style="text-align: center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#materias_disponibles}}
+                <tr>
+                    <td>{{codigo}}</td>
+                    <td><strong>{{nombre}}</strong></td>
+                    <td style="text-align: center;">
+                        <form action="/alumno/procesar-inscripcion" method="POST" style="margin: 0;">
+                            <input type="hidden" name="materia_id" value="{{id}}">
+                            <button type="submit" class="btn btn-green">Anotarse</button>
+                        </form>
+                    </td>
+                </tr>
+                {{/materias_disponibles}}
+                
+                {{^materias_disponibles}}
+                <tr>
+                    <td colspan="3" class="empty-msg">
+                        No hay materias disponibles. Es posible que ya estés inscripto en todas o necesites aprobar correlativas previas.
+                    </td>
+                </tr>
+                {{/materias_disponibles}}
+            </tbody>
+        </table>
+
+        <a href="/dashboard" class="btn btn-secondary">Volver al Panel</a>
+    </div>
+
+</body>
+</html>
