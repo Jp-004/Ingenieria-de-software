@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscripción a Finales</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border-top: 4px solid #6f42c1; /* Violeta para los finales */
+        }
+
+        .header { margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; color: #ffffff; }
+        
+        h2 { color: #b197fc; font-size: 20px; margin-top: 40px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        .btn { padding: 10px 18px; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
+        .btn-violeta { background-color: #6f42c1; }
+        .btn-violeta:hover { background-color: #59359a; }
+        .btn-secondary { background-color: #495057; display: block; width: 150px; margin: 40px auto 0 auto; text-align: center; }
+        .btn-secondary:hover { background-color: #343a40; }
+
+        .tarjeta-examen {
+            background-color: #252525;
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #6f42c1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tarjeta-info h3 { margin: 0 0 5px 0; color: #b197fc; font-size: 18px; }
+        .tarjeta-info p { margin: 0 0 5px 0; color: #adb5bd; font-size: 14px; }
+        .condicion { display: inline-block; padding: 3px 8px; background-color: #333; border-radius: 4px; font-size: 12px; font-weight: bold; color: #ccc; }
+
+        .nota-badge { background-color: #198754; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; }
+        .nota-pendiente { background-color: #ffc107; color: #000; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+
+        .empty-msg { text-align: center; color: #aaa; font-style: italic; padding: 20px; background-color: #222; border-radius: 8px;}
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: center; font-weight: bold; }
+        .alert-error { background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; color: #ff6b6b; }
+        .alert-success { background-color: rgba(25, 135, 84, 0.15); border: 1px solid #198754; color: #20c997; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Gestión de Exámenes Finales</h1>
+        </div>
+
+        {{#errorMessage}} <div class="alert alert-error">{{errorMessage}}</div> {{/errorMessage}}
+        {{#successMessage}} <div class="alert alert-success">{{successMessage}}</div> {{/successMessage}}
+
+        <h2>Mis Turnos de Examen</h2>
+        <div class="lista-examenes">
+            {{#inscriptos}}
+                <div class="tarjeta-examen" style="border-left-color: #20c997;">
+                    <div class="tarjeta-info">
+                        <h3>{{materia}}</h3>
+                        <p>Fecha de la mesa: <strong>{{fecha}}</strong></p>
+                        <span class="condicion">Rinde en condición: {{estado_cursada}}</span>
+                    </div>
+                    <div>
+                        {{#tiene_nota}}
+                            <div class="nota-badge">Nota: {{nota}}</div>
+                        {{/tiene_nota}}
+                        {{^tiene_nota}}
+                            <div class="nota-pendiente">{{nota}}</div>
+                        {{/tiene_nota}}
+                    </div>
+                </div>
+            {{/inscriptos}}
+            {{^inscriptos}}
+                <div class="empty-msg">No estás inscripto a ninguna mesa de examen por el momento.</div>
+            {{/inscriptos}}
+        </div>
+
+        <h2>Mesas de Examen Disponibles</h2>
+        <div class="lista-examenes">
+            {{#disponibles}}
+                <div class="tarjeta-examen">
+                    <div class="tarjeta-info">
+                        <h3>{{materia}}</h3>
+                        <p>Fecha habilitada: <strong>{{fecha}}</strong></p>
+                        <span class="condicion">Tu condición: {{estado_cursada}}</span>
+                    </div>
+                    <div>
+                        <form action="/alumno/inscribirse-final" method="POST" style="margin: 0;">
+                            <input type="hidden" name="fecha_id" value="{{fecha_id}}">
+                            <button type="submit" class="btn btn-violeta">Inscribirse</button>
+                        </form>
+                    </div>
+                </div>
+            {{/disponibles}}
+            {{^disponibles}}
+                <div class="empty-msg">No hay fechas de examen programadas para tus materias Regulares o Libres.</div>
+            {{/disponibles}}
+        </div>
+
+        <a href="/dashboard" class="btn btn-secondary">Volver al Panel</a>
+    </div>
+
+</body>
+</html>
