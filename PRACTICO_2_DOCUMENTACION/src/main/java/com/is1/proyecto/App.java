@@ -269,7 +269,18 @@ public class App {
                 return null;
             }
             model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll());
-            model.put("docentes", com.is1.proyecto.models.Profesor.findAll());
+            java.util.List<com.is1.proyecto.models.Profesor> docentesDB = com.is1.proyecto.models.Profesor.findAll();
+            java.util.List<Map<String, Object>> docentesVista = new java.util.ArrayList<>();
+
+            for (com.is1.proyecto.models.Profesor docente : docentesDB) {
+                Map<String, Object> dMap = new HashMap<>(docente.toMap());
+                dMap.put("id", docente.getId());
+                dMap.put("dni", docente.get("dni"));
+
+                docentesVista.add(dMap);
+            }
+            model.put("docentes", docentesVista);
+            
             return new ModelAndView(model, "gestion/alta_materia.mustache");
         }, new MustacheTemplateEngine());
 
