@@ -123,3 +123,12 @@ CREATE TABLE materias_colaboradores (
     FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE,
     FOREIGN KEY (profesor_id) REFERENCES profesores(id) ON DELETE CASCADE
 );
+
+CREATE TABLE inscripcion_examen (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    alumno_id INTEGER NOT NULL,
+    fecha_examen_id INTEGER NOT NULL,
+    fecha_inscripcion TEXT NOT NULL,
+    FOREIGN KEY(alumno_id) REFERENCES alumno(id) ON DELETE CASCADE,
+    FOREIGN KEY(fecha_examen_id) REFERENCES fecha_examen(id) ON DELETE CASCADE
+);
