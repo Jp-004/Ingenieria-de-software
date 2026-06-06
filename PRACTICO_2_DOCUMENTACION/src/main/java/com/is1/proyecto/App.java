@@ -915,7 +915,7 @@ public class App {
         }, new MustacheTemplateEngine());
 
         post("/profesor/materias/evaluar", (req, res) -> {
-            String materiaIdStr = req.queryParams("materia_id"); // Ahora viene oculto
+            String materiaIdStr = req.queryParams("materia_id");
             String alumnoId = req.queryParams("alumno_id");
             String instancia = req.queryParams("instancia");
             String notaStr = req.queryParams("nota");
@@ -933,7 +933,7 @@ public class App {
                     return "";
                 }
 
-                // Guardar en la base de datos la calificación individual
+                // 1. Guardar la calificación individual recién enviada
                 com.is1.proyecto.models.Calificacion nuevaCalificacion = new com.is1.proyecto.models.Calificacion();
                 nuevaCalificacion.set("alumno_id", Integer.parseInt(alumnoId));
                 nuevaCalificacion.set("materia_id", Integer.parseInt(materiaIdStr));
@@ -942,27 +942,96 @@ public class App {
                 nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
                 nuevaCalificacion.saveIt();
 
-                if (instancia.equalsIgnoreCase("Examen Final") && nota > 5) {
-                    // Buscamos la inscripción activa del alumno para esta materia
-                    com.is1.proyecto.models.Inscripcion inscripcion = com.is1.proyecto.models.Inscripcion.findFirst(
-                            "alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId),
-                            Integer.parseInt(materiaIdStr));
-
-                    if (inscripcion != null) {
-                        inscripcion.set("estado", "Aprobada"); // Cambiamos el estado
-                        inscripcion.set("nota_final_cursada", nota); // De paso, guardamos la nota final acá
-                        inscripcion.saveIt();
-                    }
+                // 2. Traer TODAS las notas de este alumno en esta materia para evaluar su estado
+                java.util.List<com.is1.proyecto.models.Calificacion> historialNotas = 
+                    com.is1.proyecto.models.Calificacion.where("alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId), Integer.parseInt(materiaIdStr));
+                
+                Double p1 = null, p2 = null, rec = null, finalExam = null;
+                
+                // Mapear las notas a variables
+                for (com.is1.proyecto.models.Calificacion c : historialNotas) {
+                    String inst = c.getString("instancia");
+                    double n = c.getDouble("nota");
+                    if (inst.equalsIgnoreCase("Primer Parcial")) p1 = n;
+                    else if (inst.equalsIgnoreCase("Segundo Parcial")) p2 = n;
+                    else if (inst.equalsIgnoreCase("Recuperatorio")) rec = n;
+                    else if (inst.equalsIgnoreCase("Examen Final")) finalExam = n;
                 }
+
+                // 3. Buscar la inscripción para actualizar su estado general
+                com.is1.proyecto.models.Inscripcion inscripcion = com.is1.proyecto.models.Inscripcion.findFirst(
+                        "alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId), Integer.parseInt(materiaIdStr));
+                
+                if (inscripcion != null) {
+                    String nuevoEstado = inscripcion.getString("estado");
+                    Double notaFinalGuardar = null;
+
+                    // CASO A: Rinde Examen Final y aprueba
+                    if (finalExam != null && finalExam >= 5) {
+                        nuevoEstado = "Aprobada";
+                        notaFinalGuardar = finalExam;
+                    } 
+                    // CASO B: Evaluamos las condiciones de la Cursada
+                    else {
+                        Double defP1 = p1;
+                        Double defP2 = p2;
+
+                        // Aplicar la lógica del recuperatorio (reemplaza la nota aplazada)
+                        if (rec != null) {
+                            if (p1 != null && p1 < 5) defP1 = rec; 
+                            else if (p2 != null && p2 < 5) defP2 = rec;
+                            // Si rindió recup para subir nota teniendo ambos aprobados
+                            else if (p1 != null && p2 != null) {
+                                if (p1 < p2) defP1 = Math.max(p1, rec);
+                                else defP2 = Math.max(p2, rec);
+                            }
+                        }
+
+                        // Si tiene ambos parciales (o sus recuperatorios) evaluados
+                        if (defP1 != null && defP2 != null) {
+                            if (defP1 < 5 || defP2 < 5) {
+                                // Si alguno sigue aplazado y ya rindió recuperatorio, queda Libre
+                                if (rec != null) nuevoEstado = "Libre";
+                                else nuevoEstado = "Cursando"; // Aún puede rendir el recuperatorio
+                            } else {
+                                // Ambos parciales aprobados (>= 5)
+                                double promedio = (defP1 + defP2) / 2.0;
+                                if (promedio >= 7.0) {
+                                    nuevoEstado = "Aprobada"; // ¡Promoción Directa!
+                                    notaFinalGuardar = promedio;
+                                } else {
+                                    nuevoEstado = "Regular"; // Aprobó pero no le da el promedio
+                                }
+                            }
+                        } 
+                        // Si solo tiene evaluado UN parcial hasta ahora
+                        else if (defP1 != null || defP2 != null) {
+                            Double notaUnica = (defP1 != null) ? defP1 : defP2;
+                            // Si rindió mal el primero y también le fue mal en el recup, ya queda libre
+                            if (notaUnica < 5 && rec != null && rec < 5) {
+                                nuevoEstado = "Libre";
+                            } else {
+                                nuevoEstado = "Cursando";
+                            }
+                        }
+                    }
+
+                    // Guardamos el nuevo estado en la base de datos
+                    inscripcion.set("estado", nuevoEstado);
+                    if (notaFinalGuardar != null) {
+                        inscripcion.set("nota_final_cursada", notaFinalGuardar);
+                    }
+                    inscripcion.saveIt();
+                }
+
                 res.status(201);
-                res.redirect(redirectUrl + "?message=Calificacion+registrada+con+exito");
+                res.redirect(redirectUrl + "?message=Calificacion+registrada+y+estado+actualizado+correctamente");
                 return "";
 
             } catch (NumberFormatException e) {
                 res.redirect(redirectUrl + "?error=La+nota+debe+ser+un+numero+valido");
                 return "";
             } catch (Exception e) {
-                // Atrapamos cualquier otro error (ej: fallo al guardar en BD)
                 System.err.println("Error al evaluar: " + e.getMessage());
                 res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+calificacion");
                 return "";
