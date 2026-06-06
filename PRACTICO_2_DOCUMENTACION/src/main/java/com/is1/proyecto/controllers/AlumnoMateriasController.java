@@ -15,15 +15,12 @@ public class AlumnoMateriasController {
 
     public static void init() {
 
-        // ==================== LÓGICA DE INSCRIPCIÓN DEL ALUMNO ====================
-
+        // ==================== VISTA: INSCRIPCIÓN A NUEVA MATERIA ====================
         get("/alumno/inscripcion-materia", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-
-            // 1. Identificar al Alumno logueado a través de su cuenta/correo en la sesión
             String correoAlumno = req.session().attribute("currentUserUsername");
             Alumno alumno = Alumno.findFirst("correo = ?", correoAlumno);
-
+            
             if (alumno == null) {
                 res.redirect("/?error=Error+al+identificar+perfil+estudiantil");
                 return null;
@@ -31,54 +28,42 @@ public class AlumnoMateriasController {
 
             int alumnoId = Integer.parseInt(alumno.getId().toString());
             Object carreraIdObj = alumno.get("carrera_id");
-
+            
             if (carreraIdObj == null) {
                 model.put("errorMessage", "No tienes una carrera asignada. Contacta al administrador.");
                 return new ModelAndView(model, "alumno/inscripcion_materia.mustache");
             }
             int carreraId = Integer.parseInt(carreraIdObj.toString());
 
-            // 2. Buscar el plan de estudio activo para la carrera del alumno
-            List<Map> planes = Base.findAll("SELECT id FROM plan_de_estudio WHERE carrera_id = ? AND activo = 1",
-                    carreraId);
+            List<Map> planes = Base.findAll("SELECT id FROM plan_de_estudio WHERE carrera_id = ? AND activo = 1", carreraId);
             if (planes.isEmpty()) {
                 model.put("errorMessage", "No hay un plan de estudio activo configurado para tu carrera.");
                 return new ModelAndView(model, "alumno/inscripcion_materia.mustache");
             }
             int planId = Integer.parseInt(planes.get(0).get("id").toString());
 
-            // 3. Traer materias del plan en las que el alumno NO esté ya inscripto (ni
-            // cursando ni aprobadas)
-            String sqlMateriasPlan = "SELECT m.id, m.nombre, m.codigo FROM materia m " +
-                    "INNER JOIN materias_planes mp ON m.id = mp.materia_id " +
-                    "WHERE mp.plan_de_estudio_id = ? " +
-                    "AND m.id NOT IN (SELECT materia_id FROM inscripcion WHERE alumno_id = ?)";
-
+            // ACÁ ESTÁ LA MAGIA 1: Excluimos solo las materias donde ya estés cursando, regular o aprobado.
+            // Si estás 'Libre', la materia NO se excluye, por lo tanto te va a aparecer para anotarte de nuevo.
+            String sqlMateriasPlan = 
+                "SELECT m.id, m.nombre, m.codigo FROM materia m " +
+                "INNER JOIN materias_planes mp ON m.id = mp.materia_id " +
+                "WHERE mp.plan_de_estudio_id = ? " +
+                "AND m.id NOT IN (SELECT materia_id FROM inscripcion WHERE alumno_id = ? AND estado IN ('Cursando', 'Pendiente', 'Regular', 'Regularizada', 'Aprobada'))";
+            
             List<Map> materiasCandidatas = Base.findAll(sqlMateriasPlan, planId, alumnoId);
             List<Map<String, Object>> materiasDisponibles = new ArrayList<>();
 
-            // 4. Evaluar el árbol de correlatividades para cada materia candidata
             for (Map mat : materiasCandidatas) {
                 int materiaId = Integer.parseInt(mat.get("id").toString());
-
-                // Buscamos si esta materia exige materias previas en este plan
-                List<Map> requeridas = Base.findAll(
-                        "SELECT correlativa_id FROM correlatividades WHERE plan_de_estudio_id = ? AND materia_id = ?",
-                        planId, materiaId);
+                List<Map> requeridas = Base.findAll("SELECT correlativa_id FROM correlatividades WHERE plan_de_estudio_id = ? AND materia_id = ?", planId, materiaId);
 
                 boolean puedeInscribirse = true;
                 for (Map reqCorr : requeridas) {
                     int correlativaId = Integer.parseInt(reqCorr.get("correlativa_id").toString());
-
-                    // Verificamos si la correlativa está aprobada (en inscripcion con estado
-                    // 'Aprobada')
-                    long aprobada = Base.count("inscripcion",
-                            "alumno_id = ? AND materia_id = ? AND estado = 'Aprobada'",
-                            alumnoId, correlativaId);
-
+                    long aprobada = Base.count("inscripcion", "alumno_id = ? AND materia_id = ? AND estado = 'Aprobada'", alumnoId, correlativaId);
                     if (aprobada == 0) {
-                        puedeInscribirse = false;
-                        break; // No cumple esta correlativa, se descarta la materia
+                        puedeInscribirse = false; 
+                        break;
                     }
                 }
 
@@ -92,17 +77,17 @@ public class AlumnoMateriasController {
             }
 
             model.put("materias_disponibles", materiasDisponibles);
-
+            
             String error = req.queryParams("error");
-            if (error != null)
-                model.put("errorMessage", error);
+            if (error != null) model.put("errorMessage", error);
             String msg = req.queryParams("message");
-            if (msg != null)
-                model.put("successMessage", msg);
+            if (msg != null) model.put("successMessage", msg);
 
             return new ModelAndView(model, "alumno/inscripcion_materia.mustache");
         }, new MustacheTemplateEngine());
 
+
+        // ==================== LÓGICA: PROCESAR INSCRIPCIÓN ====================
         post("/alumno/procesar-inscripcion", (req, res) -> {
             String materiaIdStr = req.queryParams("materia_id");
             String correoAlumno = req.session().attribute("currentUserUsername");
@@ -114,14 +99,29 @@ public class AlumnoMateriasController {
             }
 
             try {
-                Inscripcion nuevaInscripcion = new Inscripcion();
-                nuevaInscripcion.set("alumno_id", alumno.getId());
-                nuevaInscripcion.set("materia_id", Integer.parseInt(materiaIdStr));
-                nuevaInscripcion.set("fecha", java.time.LocalDate.now().toString());
-                nuevaInscripcion.set("estado", "Pendiente"); // Queda pendiente hasta que se apruebe
-                nuevaInscripcion.saveIt();
+                // ACÁ ESTÁ LA MAGIA 2: Verificamos si ya había un registro previo (ej: quedaste Libre)
+                Inscripcion inscripcionExistente = Inscripcion.findFirst("alumno_id = ? AND materia_id = ?", alumno.getId(), Integer.parseInt(materiaIdStr));
 
-                res.redirect("/alumno/cursando?message=Inscripcion+realizada+con+exito.+Espera+confirmacion.");
+                if (inscripcionExistente != null) {
+                    if (inscripcionExistente.getString("estado").equalsIgnoreCase("Libre")) {
+                        // Si estabas libre, te renovamos la cursada sin duplicar el registro en la BD
+                        inscripcionExistente.set("estado", "Cursando");
+                        inscripcionExistente.set("fecha", java.time.LocalDate.now().toString());
+                        inscripcionExistente.saveIt();
+                        res.redirect("/alumno/cursando?message=Re-inscripcion+exitosa.+Ya+estas+cursando+nuevamente.");
+                    } else {
+                        res.redirect("/alumno/cursando?error=Ya+te+encuentras+inscripto+en+esta+materia.");
+                    }
+                } else {
+                    // Inscripción totalmente nueva y auto-aceptada
+                    Inscripcion nuevaInscripcion = new Inscripcion();
+                    nuevaInscripcion.set("alumno_id", alumno.getId());
+                    nuevaInscripcion.set("materia_id", Integer.parseInt(materiaIdStr));
+                    nuevaInscripcion.set("fecha", java.time.LocalDate.now().toString());
+                    nuevaInscripcion.set("estado", "Cursando"); // Se acepta de una
+                    nuevaInscripcion.saveIt();
+                    res.redirect("/alumno/cursando?message=Inscripcion+realizada+con+exito.+Ya+estas+cursando.");
+                }
             } catch (Exception e) {
                 System.err.println("Error procesando inscripción: " + e.getMessage());
                 res.redirect("/alumno/inscripcion-materia?error=Error+interno+al+procesar+la+inscripcion");
@@ -129,53 +129,110 @@ public class AlumnoMateriasController {
             return "";
         });
 
-        // ==================== VER MATERIAS CURSANDO ====================
+
+        // ==================== VISTA: MATERIAS CURSANDO ====================
         get("/alumno/cursando", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-
-            // Validar sesión
+            
             String correoAlumno = req.session().attribute("currentUserUsername");
             if (correoAlumno == null) {
                 res.redirect("/?error=Debes+iniciar+sesion");
                 return null;
             }
 
-            // Buscar alumno
             Alumno alumno = Alumno.findFirst("correo = ?", correoAlumno);
             if (alumno == null) {
                 res.redirect("/?error=Alumno+no+encontrado");
                 return null;
             }
 
-            // Traer las inscripciones que NO sean "Aprobada" o "Regularizada" (es decir,
-            // que esté cursando o pendiente)
-            // Hacemos un JOIN directo con la tabla materia para traer el nombre y código
-            String sql = "SELECT m.nombre as nombre_materia, m.codigo, i.estado " +
-                    "FROM inscripcion i " +
-                    "INNER JOIN materia m ON i.materia_id = m.id " +
-                    "WHERE i.alumno_id = ? AND i.estado NOT IN ('Aprobada', 'Regularizada')";
+            int alumnoId = Integer.parseInt(alumno.getId().toString());
 
-            List<Map> cursando = Base.findAll(sql, alumno.getId());
+            // Agregamos m.id as materia_id para poder buscar las notas después
+            String sql = "SELECT m.id as materia_id, m.nombre as nombre_materia, m.codigo, i.estado " +
+                         "FROM inscripcion i " +
+                         "INNER JOIN materia m ON i.materia_id = m.id " +
+                         "WHERE i.alumno_id = ? AND i.estado != 'Aprobada'";
+            
+            List<Map> cursando = Base.findAll(sql, alumnoId);
+            List<Map<String, Object>> materiasVista = new ArrayList<>();
 
-            model.put("materias_cursando", cursando);
+            for (Map row : cursando) {
+                Map<String, Object> mat = new HashMap<>(row);
+                int materiaId = Integer.parseInt(row.get("materia_id").toString());
+                String estado = (String) row.get("estado");
+                
+                // 1. Lógica de colores y estados
+                if (estado != null && estado.equalsIgnoreCase("Libre")) {
+                    mat.put("es_libre", true);
+                    mat.put("clase_estado", "badge-rojo");
+                } else if (estado != null && (estado.equalsIgnoreCase("Regular") || estado.equalsIgnoreCase("Regularizada"))) {
+                    mat.put("es_regular", true);
+                    mat.put("clase_estado", "badge-verde");
+                } else {
+                    mat.put("es_cursando", true);
+                    mat.put("clase_estado", "badge-amarillo");
+                }
+
+                // 2. Lógica para buscar las notas de esta materia
+                List<Map> notas = Base.findAll("SELECT instancia, nota FROM calificaciones WHERE alumno_id = ? AND materia_id = ?", alumnoId, materiaId);
+                
+                String notaP1 = "-", notaP2 = "-", notaRec = "-";
+                Double valP1 = null, valP2 = null, valRec = null;
+
+                for (Map n : notas) {
+                    String inst = (String) n.get("instancia");
+                    Double val = Double.parseDouble(n.get("nota").toString());
+                    
+                    if (inst.equalsIgnoreCase("Primer Parcial")) { notaP1 = String.valueOf(val); valP1 = val; }
+                    else if (inst.equalsIgnoreCase("Segundo Parcial")) { notaP2 = String.valueOf(val); valP2 = val; }
+                    else if (inst.equalsIgnoreCase("Recuperatorio")) { notaRec = String.valueOf(val); valRec = val; }
+                }
+
+                // 3. Calcular el promedio mostrado al alumno
+                String promedioFinal = "-";
+                if (valP1 != null || valP2 != null) {
+                    Double defP1 = valP1;
+                    Double defP2 = valP2;
+                    
+                    if (valRec != null) {
+                        if (valP1 != null && valP1 < 5) defP1 = valRec;
+                        else if (valP2 != null && valP2 < 5) defP2 = valRec;
+                        else if (valP1 != null && valP2 != null) {
+                            if (valP1 < valP2) defP1 = Math.max(valP1, valRec);
+                            else defP2 = Math.max(valP2, valRec);
+                        }
+                    }
+                    if (defP1 != null && defP2 != null) {
+                        double prom = (defP1 + defP2) / 2.0;
+                        promedioFinal = String.format("%.2f", prom);
+                    }
+                }
+
+                mat.put("nota_p1", notaP1);
+                mat.put("nota_p2", notaP2);
+                mat.put("nota_rec", notaRec);
+                mat.put("promedio_final", promedioFinal);
+
+                materiasVista.add(mat);
+            }
+            
+            model.put("materias_cursando", materiasVista);
+
             String error = req.queryParams("error");
-            if (error != null)
-                model.put("errorMessage", error);
-
+            if (error != null) model.put("errorMessage", error);
+            
             String msg = req.queryParams("message");
-            if (msg != null)
-                model.put("successMessage", msg);
-            // -----------------------------------------------
+            if (msg != null) model.put("successMessage", msg);
 
             return new ModelAndView(model, "alumno/materias_cursando.mustache");
         }, new MustacheTemplateEngine());
 
 
-        // ==================== VER MATERIAS APROBADAS (ANALÍTICO) ====================
+        // ==================== VISTA: MATERIAS APROBADAS (ANALÍTICO) ====================
         get("/alumno/aprobadas", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             
-            // 1. Validar sesión y buscar alumno
             String correoAlumno = req.session().attribute("currentUserUsername");
             if (correoAlumno == null) {
                 res.redirect("/?error=Debes+iniciar+sesion");
@@ -189,7 +246,6 @@ public class AlumnoMateriasController {
             }
             int alumnoId = Integer.parseInt(alumno.getId().toString());
 
-            // 2. Traer la lista de materias aprobadas y sus notas
             String sqlAprobadas = "SELECT m.nombre as nombre_materia, m.codigo, i.nota_final_cursada " +
                                   "FROM inscripcion i " +
                                   "INNER JOIN materia m ON i.materia_id = m.id " +
@@ -198,25 +254,17 @@ public class AlumnoMateriasController {
             List<Map> aprobadas = Base.findAll(sqlAprobadas, alumnoId);
             model.put("materias_aprobadas", aprobadas);
             
-            // 3. Calcular el porcentaje de la carrera
             int totalAprobadas = aprobadas.size();
             int porcentaje = 0;
             Object carreraIdObj = alumno.get("carrera_id");
             
             if (carreraIdObj != null) {
                 int carreraId = Integer.parseInt(carreraIdObj.toString());
-                
-                // Buscar el plan de estudio activo de esta carrera
                 List<Map> planes = Base.findAll("SELECT id FROM plan_de_estudio WHERE carrera_id = ? AND activo = 1", carreraId);
-                
                 if (!planes.isEmpty()) {
                     int planId = Integer.parseInt(planes.get(0).get("id").toString());
-                    
-                    // Contar cuántas materias tiene este plan en total en la tabla intermedia
                     long totalMateriasPlan = Base.count("materias_planes", "plan_de_estudio_id = ?", planId);
-                    
                     if (totalMateriasPlan > 0) {
-                        // Regla de 3 simple para el porcentaje (redondeado)
                         porcentaje = (int) Math.round(((double) totalAprobadas / totalMateriasPlan) * 100);
                     }
                 }
@@ -227,6 +275,6 @@ public class AlumnoMateriasController {
 
             return new ModelAndView(model, "alumno/materias_aprobadas.mustache");
         }, new MustacheTemplateEngine());
-    }
 
+    }
 }

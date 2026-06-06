@@ -17,12 +17,12 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px; /* Lo hicimos más ancho para que entren las dos columnas */
             background-color: #1e1e1e;
             border-radius: 10px;
             padding: 30px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-            border-top: 4px solid #0d6efd; /* Borde azul identificatorio */
+            border-top: 4px solid #0d6efd;
         }
 
         .header {
@@ -34,37 +34,29 @@
             padding-bottom: 20px;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #ffffff;
-        }
+        .header h1 { margin: 0; font-size: 24px; color: #ffffff; }
 
-        /* Botones */
-        .btn {
-            display: inline-block;
-            padding: 10px 18px;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
-        }
-
+        .btn { display: inline-block; padding: 10px 18px; color: white; text-decoration: none; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; transition: background-color 0.2s; }
         .btn-blue { background-color: #0d6efd; }
         .btn-blue:hover { background-color: #0b5ed7; }
-
         .btn-secondary { background-color: #495057; display: block; width: 150px; margin: 30px auto 0 auto; text-align: center; }
         .btn-secondary:hover { background-color: #343a40; }
 
-        /* Lista de materias */
-        ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
+        /* --- NUEVO LAYOUT DIVIDIDO --- */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start; /* Para que el panel derecho no se estire de más */
         }
+
+        /* Responsive: si la pantalla es chica, se pone uno arriba del otro */
+        @media (max-width: 768px) {
+            .layout-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Lista base de materias */
+        ul { list-style-type: none; padding: 0; margin: 0; }
 
         li {
             background-color: #252525;
@@ -75,35 +67,63 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer; /* Cambia el mouse a una manito */
+            transition: transform 0.2s, background-color 0.2s;
         }
 
-        .materia-info h3 {
-            margin: 0 0 5px 0;
-            color: #6ea8fe;
-            font-size: 18px;
+        li:hover {
+            transform: translateX(5px);
+            background-color: #2c2c2c;
         }
 
-        .materia-info p {
-            margin: 0;
-            color: #adb5bd;
-            font-size: 14px;
+        .materia-info h3 { margin: 0 0 5px 0; color: #6ea8fe; font-size: 18px; }
+        .materia-info p { margin: 0; color: #adb5bd; font-size: 14px; }
+
+        /* Badges y estados */
+        .estado-badge { padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-amarillo { background-color: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid #ffc107; } 
+        .badge-verde { background-color: rgba(25, 135, 84, 0.15); color: #20c997; border: 1px solid #198754; }    
+        .badge-rojo { background-color: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid #dc3545; }      
+        
+        .materia-libre { border-left: 4px solid #dc3545 !important; opacity: 0.7; background-color: #2a1d1d; }
+        .materia-libre .materia-info h3 { text-decoration: line-through; color: #888 !important; }
+
+        /* --- PANEL DERECHO DE DETALLES --- */
+        .panel-detalle {
+            background-color: #252525;
+            border-radius: 8px;
+            padding: 25px;
+            border-top: 4px solid #adb5bd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: none; /* Arranca oculto hasta que hagan clic */
         }
 
-        .estado-badge {
-            background-color: #333;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #ffc107; /* Amarillo para 'Pendiente' o en curso */
+        .panel-detalle h2 { margin-top: 0; color: #ffffff; font-size: 22px; margin-bottom: 5px;}
+        .panel-detalle .subtitulo { color: #6ea8fe; font-weight: bold; margin-bottom: 20px; font-size: 14px;}
+        
+        .fila-nota {
+            display: flex;
+            justify-content: space-between;
+            background-color: #1e1e1e;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 15px;
         }
 
-        .empty-msg {
-            text-align: center;
-            color: #aaa;
-            font-style: italic;
-            padding: 20px;
+        .fila-nota span.valor { font-weight: bold; color: #fff; }
+        
+        .fila-promedio {
+            background-color: rgba(13, 110, 253, 0.15);
+            border: 1px solid #0d6efd;
+            margin-top: 20px;
         }
+        .fila-promedio span.valor { color: #6ea8fe; font-size: 18px;}
+
+        .empty-msg { text-align: center; color: #aaa; font-style: italic; padding: 20px; }
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: center; font-weight: bold; }
+        .alert-error { background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; color: #ff6b6b; }
+        .alert-success { background-color: rgba(25, 135, 84, 0.15); border: 1px solid #198754; color: #20c997; }
     </style>
 </head>
 <body>
@@ -114,28 +134,86 @@
             <a href="/alumno/inscripcion-materia" class="btn btn-blue">+ Inscribirse a materia</a>
         </div>
 
-        <ul>
-            {{#materias_cursando}}
-                <li>
-                    <div class="materia-info">
-                        <h3>{{nombre_materia}}</h3>
-                        <p>Código: {{codigo}}</p>
-                    </div>
-                    <div class="estado-badge">
-                        {{estado}}
-                    </div>
-                </li>
-            {{/materias_cursando}}
-            
-            {{^materias_cursando}}
-                <div class="empty-msg">
-                    No estás inscripto en ninguna materia en este momento. Hacé clic en "Inscribirse a materia" para empezar.
-                </div>
-            {{/materias_cursando}}
-        </ul>
+        {{#errorMessage}} <div class="alert alert-error">{{errorMessage}}</div> {{/errorMessage}}
+        {{#successMessage}} <div class="alert alert-success">{{successMessage}}</div> {{/successMessage}}
 
-        <a href="/dashboard" class="btn btn-secondary">Volver al Panel</a>
+        <div class="layout-grid">
+            
+            <div class="columna-lista">
+                <ul>
+                    {{#materias_cursando}}
+                        <li class="{{#es_libre}}materia-libre{{/es_libre}}" 
+                            onclick="mostrarDetalles('{{nombre_materia}}', '{{codigo}}', '{{nota_p1}}', '{{nota_p2}}', '{{nota_rec}}', '{{promedio_final}}')">
+                            
+                            <div class="materia-info">
+                                <h3>{{nombre_materia}}</h3>
+                                <p>Código: {{codigo}}</p>
+                            </div>
+                            <div class="estado-badge {{clase_estado}}">
+                                {{estado}}
+                            </div>
+                        </li>
+                    {{/materias_cursando}}
+                    
+                    {{^materias_cursando}}
+                        <div class="empty-msg">
+                            No estás inscripto en ninguna materia en este momento. Hacé clic en "Inscribirse a materia" para empezar.
+                        </div>
+                    {{/materias_cursando}}
+                </ul>
+            </div>
+
+            <div class="columna-detalle">
+                <div id="panel-info" class="panel-detalle">
+                    <h2 id="det-nombre">Nombre de la Materia</h2>
+                    <div class="subtitulo">Código: <span id="det-codigo">---</span></div>
+                    
+                    <div class="fila-nota">
+                        <span>Primer Parcial:</span>
+                        <span class="valor" id="det-p1">-</span>
+                    </div>
+                    
+                    <div class="fila-nota">
+                        <span>Segundo Parcial:</span>
+                        <span class="valor" id="det-p2">-</span>
+                    </div>
+                    
+                    <div class="fila-nota">
+                        <span>Recuperatorio:</span>
+                        <span class="valor" id="det-rec">-</span>
+                    </div>
+
+                    <div class="fila-nota fila-promedio">
+                        <span><strong>Promedio Final:</strong></span>
+                        <span class="valor" id="det-prom">-</span>
+                    </div>
+                </div>
+                
+                <div id="panel-vacio" style="text-align: center; color: #666; margin-top: 50px; font-style: italic;">
+                    Seleccioná una materia de la lista para ver sus notas.
+                </div>
+            </div>
+
+        </div> <a href="/dashboard" class="btn btn-secondary">Volver al Panel</a>
     </div>
+
+    <script>
+        function mostrarDetalles(nombre, codigo, p1, p2, rec, prom) {
+            // Ocultamos el mensaje de "Selecciona una materia"
+            document.getElementById('panel-vacio').style.display = 'none';
+            
+            // Mostramos el panel de detalles
+            document.getElementById('panel-info').style.display = 'block';
+            
+            // Actualizamos los textos con la información que llegó del clic
+            document.getElementById('det-nombre').innerText = nombre;
+            document.getElementById('det-codigo').innerText = codigo;
+            document.getElementById('det-p1').innerText = p1;
+            document.getElementById('det-p2').innerText = p2;
+            document.getElementById('det-rec').innerText = rec;
+            document.getElementById('det-prom').innerText = prom;
+        }
+    </script>
 
 </body>
 </html>
