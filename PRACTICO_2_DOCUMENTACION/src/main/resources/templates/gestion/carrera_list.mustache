@@ -51,12 +51,20 @@
                             <td class="px-6 py-4 text-sm text-gray-600">{{codigo}}</td>
                             <td class="px-6 py-4 text-center">
                                 <div class="flex justify-center gap-2">
+                                    <a href="/plan/list?from=carrera" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition">
+                                        <i class="ti ti-list"></i> Planes
+                                    </a>
+
                                     <a href="/carrera/edit?id={{id}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition">
                                         <i class="ti ti-edit"></i> Editar
                                     </a>
-                                    <a href="/carrera/delete?id={{id}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition">
-                                        <i class="ti ti-trash"></i> Eliminar
-                                    </a>
+                                    
+                                    <form action="/carrera/delete" method="post" onsubmit="return confirm('¿Seguro que quieres eliminar esta carrera?');" class="m-0 flex">
+                                        <input type="hidden" name="id" value="{{id}}">
+                                        <button type="submit" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition">
+                                            <i class="ti ti-trash"></i> Eliminar
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
