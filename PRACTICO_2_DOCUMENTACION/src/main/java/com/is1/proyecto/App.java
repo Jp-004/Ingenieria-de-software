@@ -276,13 +276,13 @@ public class App {
             model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll());
             java.util.List<com.is1.proyecto.models.Profesor> docentesDB = com.is1.proyecto.models.Profesor.findAll();
             java.util.List<Map<String, Object>> docentesVista = new java.util.ArrayList<>();
-            
+
             for (com.is1.proyecto.models.Profesor docente : docentesDB) {
                 Map<String, Object> dMap = new HashMap<>(docente.toMap());
-                
+
                 dMap.put("id", docente.getId());
-                dMap.put("dni", docente.get("dni")); 
-                
+                dMap.put("dni", docente.get("dni"));
+
                 docentesVista.add(dMap);
             }
             model.put("docentes", docentesVista);
@@ -1002,7 +1002,6 @@ public class App {
 
         // ==================== DETALLE DE MATERIA Y ALUMNOS INCRIPTOS
         // ====================
-
         get("/profesor/materias/:id", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
 
@@ -1020,25 +1019,30 @@ public class App {
                     res.redirect("/profesor/materias?error=Materia+no+encontrada");
                     return null;
                 }
-                model.put("materia", materia);
+                // SOLUCIÓN: Convertimos la materia a Map
+                model.put("materia", materia.toMap());
 
-                // 1. Buscar alumnos inscriptos cruzando la tabla 'inscripcion' con 'alumno'
+                // 1. Buscar alumnos inscriptos y convertirlos a Map
                 java.util.List<com.is1.proyecto.models.Inscripcion> inscripciones = com.is1.proyecto.models.Inscripcion
                         .where("materia_id = ?", materia.getId());
-                java.util.List<com.is1.proyecto.models.Alumno> alumnosInscriptos = new java.util.ArrayList<>();
+                java.util.List<Map<String, Object>> alumnosMap = new java.util.ArrayList<>();
 
                 for (com.is1.proyecto.models.Inscripcion ins : inscripciones) {
                     com.is1.proyecto.models.Alumno alu = com.is1.proyecto.models.Alumno.findById(ins.get("alumno_id"));
                     if (alu != null) {
-                        alumnosInscriptos.add(alu);
+                        alumnosMap.add(alu.toMap());
                     }
                 }
-                model.put("alumnos", alumnosInscriptos);
+                model.put("alumnos", alumnosMap);
 
-                // 2. Buscar las fechas de examen ya agendadas para esta materia
-                java.util.List<com.is1.proyecto.models.FechaExamen> fechasAgendadas = com.is1.proyecto.models.FechaExamen
-                        .where("materia_id = ?", materia.getId());
-                model.put("fechas", fechasAgendadas);
+                // 2. Buscar las fechas agendadas y convertirlas a Map (ACÁ ESTABA EL ERROR
+                // VISUAL)
+                java.util.List<Map<String, Object>> fechasMap = new java.util.ArrayList<>();
+                for (org.javalite.activejdbc.Model f : com.is1.proyecto.models.FechaExamen.where("materia_id = ?",
+                        materia.getId())) {
+                    fechasMap.add(f.toMap());
+                }
+                model.put("fechas", fechasMap);
 
             } catch (Exception e) {
                 System.err.println("Error al cargar detalle de materia: " + e.getMessage());
@@ -1074,41 +1078,52 @@ public class App {
             try {
                 com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
 
-                // Obtenemos la carrera a la que pertenece la materia mediante el Plan de
-                // Estudio
-                com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio
-                        .findById(materia.get("plan_de_estudio_id"));
-                if (plan == null) {
-                    res.redirect(redirectUrl + "?error=La+materia+no+tiene+un+plan+de+estudio+asociado");
+                // PARCHE ESQUEMA NUEVO: Buscamos el plan a través de la tabla intermedia
+                // materias_planes
+                Object planId = org.javalite.activejdbc.Base.firstCell(
+                        "SELECT plan_de_estudio_id FROM materias_planes WHERE materia_id = ?", materia.getId());
+
+                if (planId == null) {
+                    res.redirect(redirectUrl + "?error=La+materia+no+tiene+un+plan+de+estudio+asociado+en+el+sistema.");
                     return "";
                 }
+
+                com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
                 Object carreraId = plan.get("carrera_id");
 
-                // REGLA 1: Validar que la fecha esté dentro de un rango/periodo permitido por
-                // el Admin para esta carrera
+                // LOGICA NUEVA: Determinar si el profesor está queriendo agendar un Parcial o
+                // un Final
+                String tipoRequerido = "Parcial";
+                if (instancia.equalsIgnoreCase("Examen Final")) {
+                    tipoRequerido = "Final";
+                }
+
+                // REGLA 1 ACTUALIZADA: Validar rango de fecha Y que coincida el TIPO
+                // (Parcial/Final)
                 long dentroDePeriodo = com.is1.proyecto.models.PeriodoExamen.count(
-                        "carrera_id = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
-                        carreraId, fecha, fecha);
+                        "carrera_id = ? AND tipo = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
+                        carreraId, tipoRequerido, fecha, fecha);
 
                 if (dentroDePeriodo == 0) {
                     res.redirect(redirectUrl
-                            + "?error=La+fecha+seleccionada+no+corresponde+a+ningun+calendario+academico+configurado+por+el+admin.");
+                            + "?error=La+fecha+no+corresponde+a+un+periodo+de+" + tipoRequerido
+                            + "es+configurado+por+el+admin.");
                     return "";
                 }
 
-                // REGLA 2: Validar que no haya más de 2 exámenes el mismo día para la misma
-                // carrera
+                // REGLA 2 ACTUALIZADA: La subquery ahora viaja por materias_planes para contar
+                // los 2 exámenes
                 long examenesEseDia = com.is1.proyecto.models.FechaExamen.count(
-                        "fecha = ? AND materia_id IN (SELECT id FROM materia WHERE plan_de_estudio_id IN (SELECT id FROM plan_de_estudio WHERE carrera_id = ?))",
+                        "fecha = ? AND materia_id IN (SELECT materia_id FROM materias_planes WHERE plan_de_estudio_id IN (SELECT id FROM plan_de_estudio WHERE carrera_id = ?))",
                         fecha, carreraId);
 
                 if (examenesEseDia >= 2) {
                     res.redirect(redirectUrl
-                            + "?error=Cupo+de+examenes+completo.+Ya+hay+2+parciales+programados+para+esta+carrera+el+mismo+dia.");
+                            + "?error=Cupo+de+examenes+completo.+Ya+hay+2+examenes+programados+para+esta+carrera+el+mismo+dia.");
                     return "";
                 }
 
-                // Si pasa las dos reglas de negocio, se guarda de forma segura
+                // Si pasa todo, guardamos
                 com.is1.proyecto.models.FechaExamen nuevaFecha = new com.is1.proyecto.models.FechaExamen();
                 nuevaFecha.set("materia_id", materia.getId());
                 nuevaFecha.set("instancia", instancia);
@@ -1120,10 +1135,10 @@ public class App {
 
             } catch (Exception e) {
                 System.err.println("Error al procesar fecha de examen: " + e.getMessage());
+                e.printStackTrace();
                 res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+fecha");
                 return "";
             }
-
         });
 
         // ==================== PLAN DE ESTUDIO - ELIMINAR ====================
@@ -1168,6 +1183,90 @@ public class App {
 
         PlanDeEstudioController.init();
         AlumnoMateriasController.init();
+
+        // ==================== ADMIN - GESTIÓN DE PERIODOS DE EXÁMENES
+        // ====================
+
+        get("/gestion/periodos", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            String rango = req.session().attribute("rango");
+            if (loggedIn == null || !loggedIn || !"Admin".equals(rango)) {
+                res.redirect("/login?error=Acceso+denegado");
+                return null;
+            }
+
+            try {
+                // SOLUCIÓN CORREGIDA: Usamos org.javalite.activejdbc.Model en el for para
+                // evitar el error de casteo
+                java.util.List<Map<String, Object>> carrerasMap = new java.util.ArrayList<>();
+                for (org.javalite.activejdbc.Model c : com.is1.proyecto.models.Carrera.findAll()) {
+                    carrerasMap.add(c.toMap());
+                }
+                model.put("carreras", carrerasMap);
+
+                java.util.List<Map<String, Object>> periodosMap = new java.util.ArrayList<>();
+                for (org.javalite.activejdbc.Model p : com.is1.proyecto.models.PeriodoExamen.findAll()) {
+                    periodosMap.add(p.toMap());
+                }
+                model.put("periodos", periodosMap);
+
+            } catch (Exception e) {
+                System.err.println("Error al cargar datos para periodos: " + e.getMessage());
+            }
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null)
+                model.put("errorMessage", errorMessage);
+            String successMessage = req.queryParams("message");
+            if (successMessage != null)
+                model.put("successMessage", successMessage);
+
+            return new ModelAndView(model, "gestion/gestion_periodos.mustache");
+        }, new MustacheTemplateEngine());
+
+        post("/gestion/periodos/create", (req, res) -> {
+            String carreraIdStr = req.queryParams("carrera_id");
+            String tipo = req.queryParams("tipo"); // 'Parcial' o 'Final'
+            String descripcion = req.queryParams("descripcion");
+            String fechaInicio = req.queryParams("fecha_inicio");
+            String fechaFin = req.queryParams("fecha_fin");
+
+            String redirectUrl = "/gestion/periodos";
+
+            if (carreraIdStr == null || tipo == null || descripcion == null || fechaInicio == null
+                    || fechaFin == null) {
+                res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            try {
+                // Validar que la fecha de inicio no sea mayor a la de fin
+                java.time.LocalDate inicio = java.time.LocalDate.parse(fechaInicio);
+                java.time.LocalDate fin = java.time.LocalDate.parse(fechaFin);
+                if (inicio.isAfter(fin)) {
+                    res.redirect(redirectUrl + "?error=La+fecha+de+inicio+no+puede+ser+posterior+a+la+fecha+de+fin");
+                    return "";
+                }
+
+                com.is1.proyecto.models.PeriodoExamen nuevoPeriodo = new com.is1.proyecto.models.PeriodoExamen();
+                nuevoPeriodo.set("carrera_id", Integer.parseInt(carreraIdStr));
+                nuevoPeriodo.set("tipo", tipo);
+                nuevoPeriodo.set("descripcion", descripcion);
+                nuevoPeriodo.set("fecha_inicio", fechaInicio);
+                nuevoPeriodo.set("fecha_fin", fechaFin);
+                nuevoPeriodo.saveIt();
+
+                res.redirect(redirectUrl + "?message=Periodo+de+examenes+creado+con+exito");
+                return "";
+
+            } catch (Exception e) {
+                System.err.println("Error al guardar periodo: " + e.getMessage());
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+el+periodo");
+                return "";
+            }
+        });
     } // Fin del método main
 }
 // Fin de la clase App

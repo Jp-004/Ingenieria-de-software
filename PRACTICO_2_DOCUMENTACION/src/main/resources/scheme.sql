@@ -82,7 +82,8 @@ CREATE TABLE IF NOT EXISTS calificaciones (
 CREATE TABLE IF NOT EXISTS periodo_examen (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     carrera_id INTEGER NOT NULL,
-    descripcion TEXT NOT NULL, -- Ej: "Primeros Parciales 2026"
+    tipo TEXT NOT NULL,         -- NUEVO: Acá guardamos 'Parcial' o 'Final'
+    descripcion TEXT NOT NULL,  -- Ej: "Primeros Parciales 2026"
     fecha_inicio TEXT NOT NULL, -- Formato 'YYYY-MM-DD'
     fecha_fin TEXT NOT NULL,    -- Formato 'YYYY-MM-DD'
     FOREIGN KEY (carrera_id) REFERENCES carrera(id)
