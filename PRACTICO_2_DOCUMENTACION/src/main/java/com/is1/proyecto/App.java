@@ -1078,6 +1078,46 @@ public class App {
 
         });
 
+        // ==================== PLAN DE ESTUDIO - ELIMINAR ====================
+        get("/plan/delete", (req, res) -> {
+            String idStr = req.queryParams("id");
+            
+            // Si no llega el ID, gritamos el error
+            if (idStr == null || idStr.isEmpty()) {
+                res.redirect("/plan/list?error=Error+critico:+El+boton+no+envio+el+ID+del+plan");
+                return "";
+            }
+
+            try {
+                com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(idStr);
+                if (plan != null) {
+                    
+                    // Regla de Integridad 
+                    java.util.List<java.util.Map> materiasAsociadas = org.javalite.activejdbc.Base.findAll(
+                        "SELECT 1 FROM materias_planes WHERE plan_de_estudio_id = ?", idStr
+                    );
+                    
+                    if (!materiasAsociadas.isEmpty()) {
+                         res.redirect("/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas+activas");
+                         return "";
+                    }
+
+                    // Borramos y avisamos con éxito
+                    plan.delete();
+                    res.redirect("/plan/list?message=Plan+de+estudio+eliminado+exitosamente");
+                    return "";
+                } else {
+                    res.redirect("/plan/list?error=Plan+de+estudio+no+encontrado+en+la+base+de+datos");
+                    return "";
+                }
+            } catch (Exception e) {
+                System.err.println("Error al eliminar el plan: " + e.getMessage());
+                e.printStackTrace();
+                res.redirect("/plan/list?error=Error+interno+al+intentar+eliminar");
+                return "";
+            }
+        });
+
         PlanDeEstudioController.init();
     } // Fin del método main
 } // Fin de la clase App
