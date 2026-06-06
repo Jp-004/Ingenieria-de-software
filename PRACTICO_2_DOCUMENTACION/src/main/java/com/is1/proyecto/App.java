@@ -25,7 +25,6 @@ import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
 
-
 public class App {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -924,6 +923,7 @@ public class App {
                     return "";
                 }
 
+                // Guardar en la base de datos la calificación individual
                 com.is1.proyecto.models.Calificacion nuevaCalificacion = new com.is1.proyecto.models.Calificacion();
                 nuevaCalificacion.set("alumno_id", Integer.parseInt(alumnoId));
                 nuevaCalificacion.set("materia_id", Integer.parseInt(materiaIdStr));
@@ -932,14 +932,32 @@ public class App {
                 nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
                 nuevaCalificacion.saveIt();
 
+                if (instancia.equalsIgnoreCase("Examen Final") && nota > 5) {
+                    // Buscamos la inscripción activa del alumno para esta materia
+                    com.is1.proyecto.models.Inscripcion inscripcion = com.is1.proyecto.models.Inscripcion.findFirst(
+                            "alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId),
+                            Integer.parseInt(materiaIdStr));
+
+                    if (inscripcion != null) {
+                        inscripcion.set("estado", "Aprobada"); // Cambiamos el estado
+                        inscripcion.set("nota_final_cursada", nota); // De paso, guardamos la nota final acá
+                        inscripcion.saveIt();
+                    }
+                }
+                res.status(201);
                 res.redirect(redirectUrl + "?message=Calificacion+registrada+con+exito");
                 return "";
+
             } catch (NumberFormatException e) {
                 res.redirect(redirectUrl + "?error=La+nota+debe+ser+un+numero+valido");
                 return "";
+            } catch (Exception e) {
+                // Atrapamos cualquier otro error (ej: fallo al guardar en BD)
+                System.err.println("Error al evaluar: " + e.getMessage());
+                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+calificacion");
+                return "";
             }
         });
-
         // ==================== PROFESOR - MIS MATERIAS ====================
 
         get("/profesor/materias", (req, res) -> {
@@ -1141,4 +1159,5 @@ public class App {
         PlanDeEstudioController.init();
         AlumnoMateriasController.init();
     } // Fin del método main
-} // Fin de la clase App
+}
+// Fin de la clase App
