@@ -5,115 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Calificación</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f4f4f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 600px; 
-            margin: 40px auto; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-        }
-        h2 { 
-            text-align: center; 
-            color: #333; 
-            margin-bottom: 20px;
-        }
-        .form-group { 
-            margin-bottom: 20px; 
-        }
-        label { 
-            display: block; 
-            font-weight: bold; 
-            margin-bottom: 8px; 
-            color: #555;
-        }
-        select, input[type="number"] { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-            font-size: 16px;
-        }
-        .btn { 
-            width: 100%; 
-            padding: 12px; 
-            background-color: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .btn:hover { 
-            background-color: #218838; 
-        }
-        .alert { 
-            padding: 15px; 
-            margin-bottom: 20px; 
-            border-radius: 4px; 
-            text-align: center;
-        }
-        .alert-success { 
-            background-color: #d4edda; 
-            color: #155724; 
-            border: 1px solid #c3e6cb; 
-        }
-        .alert-danger { 
-            background-color: #f8d7da; 
-            color: #721c24; 
-            border: 1px solid #f5c6cb; 
-        }
-        .btn-back { 
-            display: block; 
-            text-align: center; 
-            margin-top: 20px; 
-            color: #007bff; 
-            text-decoration: none; 
-        }
-        .btn-back:hover {
-            text-decoration: underline;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; font-size: 18px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #555; }
+        select, input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn:hover { background-color: #218838; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; text-align: center; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #007bff; text-decoration: none; }
+        .btn-back:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>Registrar Calificación</h2>
+        {{#materia}}
+        <div class="subtitle">Materia: <strong>{{nombre}}</strong></div>
+        {{/materia}}
 
-        {{#errorMessage}}
-            <div class="alert alert-danger">{{errorMessage}}</div>
-        {{/errorMessage}}
+        {{#errorMessage}} <div class="alert alert-danger">{{errorMessage}}</div> {{/errorMessage}}
+        {{#successMessage}} <div class="alert alert-success">{{successMessage}}</div> {{/successMessage}}
 
-        {{#successMessage}}
-            <div class="alert alert-success">{{successMessage}}</div>
-        {{/successMessage}}
-
-        <form action="/profesor/evaluar" method="POST">
+        <form action="/profesor/materias/evaluar" method="POST">
             
-            <div class="form-group">
-                <label for="materia_id">Materia:</label>
-                <select name="materia_id" id="materia_id" required>
-                    <option value="">Seleccione una materia...</option>
-                    {{#materias}}
-                        <option value="{{id}}">{{nombre}} (Cód: {{codigo}})</option>
-                    {{/materias}}
-                </select>
-            </div>
+            {{#materia}}
+            <input type="hidden" name="materia_id" value="{{id}}">
+            {{/materia}}
 
             <div class="form-group">
-                <label for="alumno_id">Alumno:</label>
+                <label for="alumno_id">Alumno Inscripto:</label>
                 <select name="alumno_id" id="alumno_id" required>
                     <option value="">Seleccione un alumno...</option>
                     {{#alumnos}}
-                        <option value="{{id}}">{{apellido}}, {{nombre}} - DNI: {{dni}}</option>
+                        <option value="{{id}}">{{apellido}}, {{nombre}} - Legajo: {{legajo}}</option>
                     {{/alumnos}}
                 </select>
             </div>
@@ -138,7 +68,9 @@
             <button type="submit" class="btn">Guardar Calificación</button>
         </form>
 
-        <a href="javascript:history.back()" class="btn-back">Volver Atrás</a>
+        {{#materia}}
+        <a href="/profesor/materias/{{id}}" class="btn-back">Volver al Detalle de la Materia</a>
+        {{/materia}}
     </div>
 
 </body>
