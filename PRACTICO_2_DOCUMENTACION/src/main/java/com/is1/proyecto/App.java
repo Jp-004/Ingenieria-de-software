@@ -846,79 +846,76 @@ public class App {
 
         // ==================== CALIFICACIONES ====================
 
-        get("/profesor/evaluar", (req, res) -> {
+        get("/profesor/materias/:id/evaluar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-
-            // Validar que haya iniciado sesión y sea Profesor
             Boolean loggedIn = req.session().attribute("loggedIn");
             String rango = req.session().attribute("rango");
 
             if (loggedIn == null || !loggedIn || !"Profesor".equals(rango)) {
-                res.redirect("/login?error=Acceso+denegado.+Solo+profesores+pueden+cargar+notas.");
+                res.redirect("/login?error=Acceso+denegado");
                 return null;
             }
 
-            // Mandamos las listas para armar los <select> en el HTML
-            model.put("alumnos", com.is1.proyecto.models.Alumno.findAll());
-            model.put("materias", com.is1.proyecto.models.Materia.findAll());
+            String materiaIdStr = req.params(":id");
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaIdStr);
+                model.put("materia", materia);
+
+                // Traemos SOLO los alumnos inscriptos en esta materia
+                java.util.List<com.is1.proyecto.models.Inscripcion> inscripciones = com.is1.proyecto.models.Inscripcion
+                        .where("materia_id = ?", materiaIdStr);
+                java.util.List<com.is1.proyecto.models.Alumno> alumnosInscriptos = new java.util.ArrayList<>();
+                for (com.is1.proyecto.models.Inscripcion ins : inscripciones) {
+                    com.is1.proyecto.models.Alumno alu = com.is1.proyecto.models.Alumno.findById(ins.get("alumno_id"));
+                    if (alu != null)
+                        alumnosInscriptos.add(alu);
+                }
+                model.put("alumnos", alumnosInscriptos);
+            } catch (Exception e) {
+                System.err.println("Error: " + e.getMessage());
+            }
 
             String errorMessage = req.queryParams("error");
-            if (errorMessage != null && !errorMessage.isEmpty()) {
+            if (errorMessage != null)
                 model.put("errorMessage", errorMessage);
-            }
-
             String successMessage = req.queryParams("message");
-            if (successMessage != null && !successMessage.isEmpty()) {
+            if (successMessage != null)
                 model.put("successMessage", successMessage);
-            }
 
-            // Renderizamos la vista dentro de la carpeta del profesor
             return new ModelAndView(model, "profesor/calificacion_form.mustache");
         }, new MustacheTemplateEngine());
 
-        post("/profesor/evaluar", (req, res) -> {
+        post("/profesor/materias/evaluar", (req, res) -> {
+            String materiaIdStr = req.queryParams("materia_id"); // Ahora viene oculto
             String alumnoId = req.queryParams("alumno_id");
-            String materiaId = req.queryParams("materia_id");
             String instancia = req.queryParams("instancia");
             String notaStr = req.queryParams("nota");
-            String redirectUrl = "/profesor/evaluar";
+            String redirectUrl = "/profesor/materias/" + materiaIdStr + "/evaluar";
 
-            // Validar campos vacíos
-            if (alumnoId == null || materiaId == null || instancia == null || notaStr == null ||
-                    alumnoId.trim().isEmpty() || materiaId.trim().isEmpty() || instancia.trim().isEmpty()
-                    || notaStr.trim().isEmpty()) {
+            if (alumnoId == null || instancia == null || notaStr == null || notaStr.trim().isEmpty()) {
                 res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
                 return "";
             }
 
             try {
-                // Convertir la nota a número y validar el rango
                 double nota = Double.parseDouble(notaStr);
                 if (nota < 0 || nota > 10) {
                     res.redirect(redirectUrl + "?error=La+nota+debe+estar+entre+0+y+10");
                     return "";
                 }
 
-                // Guardar en la base de datos
                 com.is1.proyecto.models.Calificacion nuevaCalificacion = new com.is1.proyecto.models.Calificacion();
                 nuevaCalificacion.set("alumno_id", Integer.parseInt(alumnoId));
-                nuevaCalificacion.set("materia_id", Integer.parseInt(materiaId));
+                nuevaCalificacion.set("materia_id", Integer.parseInt(materiaIdStr));
                 nuevaCalificacion.set("instancia", instancia);
                 nuevaCalificacion.set("nota", nota);
                 nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
                 nuevaCalificacion.saveIt();
 
-                res.status(201);
                 res.redirect(redirectUrl + "?message=Calificacion+registrada+con+exito");
                 return "";
-
             } catch (NumberFormatException e) {
                 res.redirect(redirectUrl + "?error=La+nota+debe+ser+un+numero+valido");
-                return "";
-            } catch (Exception e) {
-                System.err.println("Error al registrar calificacion: " + e.getMessage());
-                e.printStackTrace();
-                res.redirect(redirectUrl + "?error=Error+interno+al+guardar+la+nota");
                 return "";
             }
         });
