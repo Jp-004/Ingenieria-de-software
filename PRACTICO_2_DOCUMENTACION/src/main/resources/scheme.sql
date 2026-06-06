@@ -114,3 +114,11 @@ CREATE TABLE correlatividades (
     FOREIGN KEY (materia_id) REFERENCES materia(id) ON DELETE CASCADE,
     FOREIGN KEY (correlativa_id) REFERENCES materia(id) ON DELETE CASCADE
 );
+
+CREATE TABLE materias_colaboradores (
+    materia_id INTEGER NOT NULL,
+    profesor_id INTEGER NOT NULL,
+    PRIMARY KEY (materia_id, profesor_id),
+    FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE,
+    FOREIGN KEY (profesor_id) REFERENCES profesores(id) ON DELETE CASCADE
+);

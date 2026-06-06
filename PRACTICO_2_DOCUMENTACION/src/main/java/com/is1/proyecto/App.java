@@ -1166,6 +1166,90 @@ public class App {
             }
         });
 
+        // ==================== MATERIA - MODIFICAR (GET) ====================
+        get("/materia/edit", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String idStr = req.queryParams("id");
+
+            if (idStr == null || idStr.isEmpty()) {
+                res.redirect("/materias/panel-gestion?error=ID+de+materia+no+proporcionado");
+                return null;
+            }
+
+            com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(idStr);
+            if (materia == null) {
+                res.redirect("/materias/panel-gestion?error=Materia+no+encontrada");
+                return null;
+            }
+
+            model.put("materia", materia);
+            model.put("docentes", com.is1.proyecto.models.Profesor.findAll());
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            return new ModelAndView(model, "gestion/materia_edit.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== MATERIA - MODIFICAR (POST) ====================
+        post("/materia/edit", (req, res) -> {
+            String idStr = req.queryParams("id");
+            String nombre = req.queryParams("nombre");
+            String codigo = req.queryParams("codigo");
+            String docenteResponsableId = req.queryParams("docente_id"); 
+            String[] colaboradoresIds = req.queryParamsValues("colaboradores"); // Array de checkboxes
+
+            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+                res.redirect("/materia/edit?id=" + idStr + "&error=Nombre+y+codigo+son+obligatorios");
+                return "";
+            }
+
+            try {
+                com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(idStr);
+                if (materia != null) {
+                    // Validar que el nuevo código no le pertenezca ya a otra materia distinta
+                    com.is1.proyecto.models.Materia materiaExistente = com.is1.proyecto.models.Materia.findFirst("codigo = ?", codigo);
+                    if (materiaExistente != null && !materiaExistente.getId().toString().equals(idStr)) {
+                        res.redirect("/materia/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+materia");
+                        return "";
+                    }
+
+                    // Actualizar datos base
+                    materia.set("nombre", nombre);
+                    materia.set("codigo", codigo);
+                    if (docenteResponsableId != null && !docenteResponsableId.isEmpty()) {
+                        materia.set("docente_id", Integer.parseInt(docenteResponsableId));
+                    }
+                    materia.saveIt();
+
+                    // Actualizar colaboradores: borramos los anteriores y guardamos los nuevos
+                    org.javalite.activejdbc.Base.exec("DELETE FROM materias_colaboradores WHERE materia_id = ?", materia.getId());
+                    
+                    if (colaboradoresIds != null) {
+                        for (String colabId : colaboradoresIds) {
+                            // Evitar que el responsable se ponga también como colaborador a sí mismo
+                            if (!colabId.equals(docenteResponsableId)) {
+                                org.javalite.activejdbc.Base.exec(
+                                    "INSERT INTO materias_colaboradores (materia_id, profesor_id) VALUES (?, ?)", 
+                                    materia.getId(), Integer.parseInt(colabId)
+                                );
+                            }
+                        }
+                    }
+
+                    res.redirect("/materias/panel-gestion?message=Materia+actualizada+exitosamente");
+                } else {
+                    res.redirect("/materias/panel-gestion?error=Materia+no+encontrada");
+                }
+            } catch (Exception e) {
+                System.err.println("Error al actualizar la materia: " + e.getMessage());
+                res.redirect("/materia/edit?id=" + idStr + "&error=Error+interno+al+actualizar");
+            }
+            return "";
+        });
+
         PlanDeEstudioController.init();
         AlumnoMateriasController.init();
     } // Fin del método main
