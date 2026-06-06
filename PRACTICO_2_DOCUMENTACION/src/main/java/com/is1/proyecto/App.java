@@ -10,6 +10,7 @@ import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contrase
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.controllers.PlanDeEstudioController;
+import com.is1.proyecto.controllers.AlumnoMateriasController;
 import com.is1.proyecto.models.Alumno; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Materia; // Interfaz Map, utilizada para Map.of() o HashMap.
 import com.is1.proyecto.models.Profesor; // Clase Singleton para la configuración de la base de datos.
@@ -23,6 +24,7 @@ import static spark.Spark.halt;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
+
 
 public class App {
 
@@ -1079,5 +1081,6 @@ public class App {
         });
 
         PlanDeEstudioController.init();
+        AlumnoMateriasController.init();
     } // Fin del método main
 } // Fin de la clase App

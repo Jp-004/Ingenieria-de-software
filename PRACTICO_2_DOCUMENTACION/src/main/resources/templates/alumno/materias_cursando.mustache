@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Materias Cursando</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border-top: 4px solid #0d6efd; /* Borde azul identificatorio */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        /* Botones */
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-blue { background-color: #0d6efd; }
+        .btn-blue:hover { background-color: #0b5ed7; }
+
+        .btn-secondary { background-color: #495057; display: block; width: 150px; margin: 30px auto 0 auto; text-align: center; }
+        .btn-secondary:hover { background-color: #343a40; }
+
+        /* Lista de materias */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background-color: #252525;
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #0d6efd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .materia-info h3 {
+            margin: 0 0 5px 0;
+            color: #6ea8fe;
+            font-size: 18px;
+        }
+
+        .materia-info p {
+            margin: 0;
+            color: #adb5bd;
+            font-size: 14px;
+        }
+
+        .estado-badge {
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #ffc107; /* Amarillo para 'Pendiente' o en curso */
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #aaa;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Mis Materias Actuales</h1>
+            <a href="/alumno/inscripcion-materia" class="btn btn-blue">+ Inscribirse a materia</a>
+        </div>
+
+        <ul>
+            {{#materias_cursando}}
+                <li>
+                    <div class="materia-info">
+                        <h3>{{nombre_materia}}</h3>
+                        <p>Código: {{codigo}}</p>
+                    </div>
+                    <div class="estado-badge">
+                        {{estado}}
+                    </div>
+                </li>
+            {{/materias_cursando}}
+            
+            {{^materias_cursando}}
+                <div class="empty-msg">
+                    No estás inscripto en ninguna materia en este momento. Hacé clic en "Inscribirse a materia" para empezar.
+                </div>
+            {{/materias_cursando}}
+        </ul>
+
+        <a href="/dashboard" class="btn btn-secondary">Volver al Panel</a>
+    </div>
+
+</body>
+</html>

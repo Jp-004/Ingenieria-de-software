@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control - Alumno</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header span {
+            color: #4da3ff; /* Azul para resaltar el usuario */
+            font-weight: bold;
+        }
+
+        /* Usamos CSS Grid para que las tarjetas se acomoden como en tu admin */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        /* Tarjetas estilo menú */
+        .card {
+            background-color: #1e1e1e; /* Fondo igual al contenedor para que el borde resalte */
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Colores basados en tu panel de control */
+        .card-cursando { border: 1px solid #0d6efd; }
+        .card-cursando h2 { color: #6ea8fe; }
+
+        .card-aprobadas { border: 1px solid #198754; }
+        .card-aprobadas h2 { color: #75b798; }
+
+        .card-finales { border: 1px solid #6f42c1; }
+        .card-finales h2 { color: #b689ff; }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            color: #adb5bd;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        /* Botones interiores de las tarjetas */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-blue { background-color: #0d6efd; }
+        .btn-blue:hover { background-color: #0b5ed7; }
+
+        .btn-green { background-color: #198754; }
+        .btn-green:hover { background-color: #157347; }
+
+        .btn-purple { background-color: #6f42c1; }
+        .btn-purple:hover { background-color: #59359a; }
+
+        /* Botón de cerrar sesión */
+        .btn-red { 
+            background-color: #c92a2a; 
+            display: block; 
+            width: 200px; 
+            margin: 40px auto 0 auto; 
+            text-align: center; 
+        }
+        .btn-red:hover { background-color: #e03131; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Panel de Control</h1>
+            <p>¡Bienvenido, <span>{{username}}</span>!</p>
+        </div>
+
+        <div class="cards-grid">
+            
+            <div class="card card-cursando">
+                <h2>Materias Cursando</h2>
+                <p>Visualiza tus materias actuales e inscríbete a nuevas.</p>
+                <a href="/alumno/cursando" class="btn btn-blue">Abrir Panel</a>
+            </div>
+
+            <div class="card card-aprobadas">
+                <h2>Materias Aprobadas</h2>
+                <p>Revisa tu historial académico y notas finales.</p>
+                <a href="/alumno/aprobadas" class="btn btn-green">Ver Rendimiento Académico</a>
+            </div>
+
+            <div class="card card-finales">
+                <h2>Inscripción a Final</h2>
+                <p>Anotate a las próximas mesas de examen final.</p>
+                <a href="/alumno/finales" class="btn btn-purple">Ver Mesas</a>
+            </div>
+
+        </div>
+
+        <a href="/logout" class="btn btn-red">Cerrar Sesión</a>
+
+    </div>
+
+</body>
+</html>
