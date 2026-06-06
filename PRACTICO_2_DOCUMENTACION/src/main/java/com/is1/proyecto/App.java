@@ -147,6 +147,7 @@ public class App {
 
         get("/alumno/create", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
+
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
@@ -155,6 +156,10 @@ public class App {
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
             }
+
+            // ACÁ ESTÁ LA MAGIA: Mandamos la lista de carreras a la vista
+            model.put("carreras", com.is1.proyecto.models.Carrera.findAll());
+
             return new ModelAndView(model, "admin/alumno_form.mustache");
         }, new MustacheTemplateEngine());
 
@@ -392,10 +397,13 @@ public class App {
             String apellido = req.queryParams("apellido");
             String correo = req.queryParams("correo");
             String dni = req.queryParams("dni");
+            String carreraIdStr = req.queryParams("carrera_id"); // Recibimos la carrera
             String redirectUrl = "/alumno/create";
 
+            // Validamos que no falte nada, incluyendo la carrera
             if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() ||
-                    correo == null || correo.isEmpty() || dni == null || dni.isEmpty()) {
+                    correo == null || correo.isEmpty() || dni == null || dni.isEmpty() ||
+                    carreraIdStr == null || carreraIdStr.isEmpty()) {
                 res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
                 return "";
             }
@@ -406,22 +414,30 @@ public class App {
             }
 
             try {
-                boolean correoExiste = Alumno.findFirst("correo = ?", correo) != null;
+                // VALIDACIÓN: Verificamos que la carrera exista en la BD
+                com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera
+                        .findById(carreraIdStr);
+                if (carreraExistente == null) {
+                    res.redirect(redirectUrl + "?error=La+carrera+seleccionada+no+existe");
+                    return "";
+                }
+
+                boolean correoExiste = com.is1.proyecto.models.Alumno.findFirst("correo = ?", correo) != null;
                 if (correoExiste) {
                     res.redirect(redirectUrl + "?error=El+correo+electronico+ya+existe+en+la+base+de+datos");
                     return "";
                 }
 
-                boolean dniExiste = Alumno.findFirst("dni = ?", dni) != null;
+                boolean dniExiste = com.is1.proyecto.models.Alumno.findFirst("dni = ?", dni) != null;
                 if (dniExiste) {
                     res.redirect(redirectUrl + "?error=El+DNI+ya+existe+en+la+base+de+datos");
                     return "";
                 }
 
-                int legajo = Alumno.count().intValue() + 1;
+                int legajo = com.is1.proyecto.models.Alumno.count().intValue() + 1;
                 String fechaIngreso = java.time.LocalDate.now().toString();
 
-                Alumno nuevoAlumno = new Alumno();
+                com.is1.proyecto.models.Alumno nuevoAlumno = new com.is1.proyecto.models.Alumno();
                 nuevoAlumno.setNombre(nombre);
                 nuevoAlumno.setApellido(apellido);
                 nuevoAlumno.setCorreo(correo);
@@ -429,11 +445,13 @@ public class App {
                 nuevoAlumno.setLegajo(legajo);
                 nuevoAlumno.setFechaIngreso(fechaIngreso);
                 nuevoAlumno.setEstadoAcademico("Activo");
+                // Guardamos el ID de la carrera
+                nuevoAlumno.set("carrera_id", Integer.parseInt(carreraIdStr));
                 nuevoAlumno.saveIt();
 
-                User nuevoUser = new User();
+                com.is1.proyecto.models.User nuevoUser = new com.is1.proyecto.models.User();
                 nuevoUser.setName(correo);
-                nuevoUser.setPassword(BCrypt.hashpw(dni, BCrypt.gensalt()));
+                nuevoUser.setPassword(org.mindrot.jbcrypt.BCrypt.hashpw(dni, org.mindrot.jbcrypt.BCrypt.gensalt()));
                 nuevoUser.setRango("Alumno");
                 nuevoUser.saveIt();
 
@@ -1081,7 +1099,7 @@ public class App {
         // ==================== PLAN DE ESTUDIO - ELIMINAR ====================
         get("/plan/delete", (req, res) -> {
             String idStr = req.queryParams("id");
-            
+
             // Si no llega el ID, gritamos el error
             if (idStr == null || idStr.isEmpty()) {
                 res.redirect("/plan/list?error=Error+critico:+El+boton+no+envio+el+ID+del+plan");
@@ -1091,15 +1109,15 @@ public class App {
             try {
                 com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(idStr);
                 if (plan != null) {
-                    
-                    // Regla de Integridad 
+
+                    // Regla de Integridad
                     java.util.List<java.util.Map> materiasAsociadas = org.javalite.activejdbc.Base.findAll(
-                        "SELECT 1 FROM materias_planes WHERE plan_de_estudio_id = ?", idStr
-                    );
-                    
+                            "SELECT 1 FROM materias_planes WHERE plan_de_estudio_id = ?", idStr);
+
                     if (!materiasAsociadas.isEmpty()) {
-                         res.redirect("/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas+activas");
-                         return "";
+                        res.redirect(
+                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+/alumno/creates+asociadas+activas");
+                        return "";
                     }
 
                     // Borramos y avisamos con éxito

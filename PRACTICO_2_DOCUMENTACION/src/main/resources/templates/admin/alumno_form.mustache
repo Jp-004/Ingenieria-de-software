@@ -37,7 +37,7 @@
             </div>
 
             <div>
-                <label for="correo" class="block text-gray-700 text-sm font-medium mb-1">Correo Electronico:</label>
+                <label for="correo" class="block text-gray-700 text-sm font-medium mb-1">Correo Electrónico:</label>
                 <input type="email" id="correo" name="correo" required
                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
@@ -48,8 +48,19 @@
                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
+            <div>
+                <label for="carrera_id" class="block text-gray-700 text-sm font-medium mb-1">Carrera:</label>
+                <select id="carrera_id" name="carrera_id" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="" disabled selected>Seleccione una carrera...</option>
+                    {{#carreras}}
+                        <option value="{{id}}">{{nombre}} (Cód: {{codigo}})</option>
+                    {{/carreras}}
+                </select>
+            </div>
+
             <button type="submit"
-                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 pt-2">
                 Registrar Alumno
             </button>
             
