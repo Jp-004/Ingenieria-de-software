@@ -9,15 +9,14 @@ import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contrase
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
-import com.is1.proyecto.controllers.PlanDeEstudioController;
 import com.is1.proyecto.controllers.AlumnoMateriasController;
-import com.is1.proyecto.models.Alumno; // Para crear mapas de datos (modelos para las plantillas).
-import com.is1.proyecto.models.Materia; // Interfaz Map, utilizada para Map.of() o HashMap.
-import com.is1.proyecto.models.Profesor; // Clase Singleton para la configuración de la base de datos.
-import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import com.is1.proyecto.controllers.PlanDeEstudioController;
+import com.is1.proyecto.models.Materia; // Para crear mapas de datos (modelos para las plantillas).
+import com.is1.proyecto.models.Profesor; // Interfaz Map, utilizada para Map.of() o HashMap.
+import com.is1.proyecto.models.User; // Clase Singleton para la configuración de la base de datos.
 
-import spark.ModelAndView; // <--- AGREGAR ESTO
-import static spark.Spark.after;
+import spark.ModelAndView; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import static spark.Spark.after; // <--- AGREGAR ESTO
 import static spark.Spark.before;
 import static spark.Spark.get;
 import static spark.Spark.halt;
@@ -275,7 +274,18 @@ public class App {
                 return null;
             }
             model.put("planes", com.is1.proyecto.models.PlanDeEstudio.findAll());
-            model.put("docentes", com.is1.proyecto.models.Profesor.findAll());
+            java.util.List<com.is1.proyecto.models.Profesor> docentesDB = com.is1.proyecto.models.Profesor.findAll();
+            java.util.List<Map<String, Object>> docentesVista = new java.util.ArrayList<>();
+            
+            for (com.is1.proyecto.models.Profesor docente : docentesDB) {
+                Map<String, Object> dMap = new HashMap<>(docente.toMap());
+                
+                dMap.put("id", docente.getId());
+                dMap.put("dni", docente.get("dni")); 
+                
+                docentesVista.add(dMap);
+            }
+            model.put("docentes", docentesVista);
             return new ModelAndView(model, "gestion/alta_materia.mustache");
         }, new MustacheTemplateEngine());
 
