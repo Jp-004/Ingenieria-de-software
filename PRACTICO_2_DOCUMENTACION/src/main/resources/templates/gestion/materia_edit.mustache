@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Materia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow border border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Editar Materia</h1>
+
+        {{#errorMessage}}
+        <div class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4">{{errorMessage}}</div>
+        {{/errorMessage}}
+
+        <form action="/materia/edit" method="POST">
+            <input type="hidden" name="id" value="{{materia.id}}">
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
+                <input type="text" name="nombre" value="{{materia.nombre}}" class="w-full border rounded px-3 py-2" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Código</label>
+                <input type="text" name="codigo" value="{{materia.codigo}}" class="w-full border rounded px-3 py-2" required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Profesor Responsable (Titular)</label>
+                <select name="docente_id" class="w-full border rounded px-3 py-2">
+                    <option value="">Seleccionar un profesor...</option>
+                    {{#docentes}}
+                    <option value="{{id}}">{{nombre}} {{apellido}}</option>
+                    {{/docentes}}
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Docentes Colaboradores</label>
+                <div class="h-32 overflow-y-auto border rounded p-3 bg-gray-50">
+                    {{#docentes}}
+                    <label class="flex items-center space-x-2 mb-2 cursor-pointer">
+                        <input type="checkbox" name="colaboradores" value="{{id}}" class="form-checkbox text-blue-600">
+                        <span>{{nombre}} {{apellido}}</span>
+                    </label>
+                    {{/docentes}}
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Selecciona uno o más profesores para asistir en la cátedra.</p>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <a href="/materias/panel-gestion" class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">Cancelar</a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
