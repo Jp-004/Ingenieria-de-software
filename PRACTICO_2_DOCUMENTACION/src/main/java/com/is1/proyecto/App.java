@@ -187,30 +187,30 @@ public class App {
 
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
-                    .findAll();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
 
-            // Creamos una lista de Mapas flexibles para no enojar a ActiveJDBC
             java.util.List<Map<String, Object>> planesVista = new java.util.ArrayList<>();
 
             for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
-                // Convertimos el modelo estricto a un mapa flexible
                 Map<String, Object> planMap = new HashMap<>(plan.toMap());
 
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
                 if (carrera != null) {
-                    // Ahora podemos inyectar un dato inventado sin problemas
                     planMap.put("carrera_nombre", carrera.getNombre());
                 } else {
                     planMap.put("carrera_nombre", "Sin carrera");
                 }
-
-                // Agregamos el mapa a nuestra nueva lista
                 planesVista.add(planMap);
             }
 
-            // Pasamos nuestra nueva lista flexible a la vista
             model.put("planes", planesVista);
+
+            String from = req.queryParams("from");
+            if ("carrera".equals(from)) {
+                model.put("backUrl", "/carrera/list");
+            } else {
+                model.put("backUrl", "/gestion/carreras");
+            }
 
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
@@ -665,8 +665,8 @@ public class App {
 
                 // Guardado en la base de datos
                 com.is1.proyecto.models.Carrera nuevaCarrera = new com.is1.proyecto.models.Carrera();
-                nuevaCarrera.setNombre(nombre);
-                nuevaCarrera.setCodigo(codigo);
+                nuevaCarrera.setNombre(nombre.trim());
+                nuevaCarrera.setCodigo(codigo.trim().toUpperCase());
                 nuevaCarrera.saveIt(); // ActiveJDBC hace el INSERT de manera automática
 
                 // Redirección exitosa al listado de carreras
@@ -748,7 +748,7 @@ public class App {
 
         // ==================== CARRERA - ELIMINAR ====================
         // Elimina la carrera seleccionada (siempre y cuando no tenga planes asociados)
-        get("/carrera/delete", (req, res) -> {
+        post("/carrera/delete", (req, res) -> {
             String idStr = req.queryParams("id");
             if (idStr != null && !idStr.isEmpty()) {
                 try {
@@ -1146,7 +1146,7 @@ public class App {
 
                     if (!materiasAsociadas.isEmpty()) {
                         res.redirect(
-                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+/alumno/creates+asociadas+activas");
+                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas");
                         return "";
                     }
 
