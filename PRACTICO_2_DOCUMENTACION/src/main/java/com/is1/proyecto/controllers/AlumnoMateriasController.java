@@ -169,6 +169,64 @@ public class AlumnoMateriasController {
 
             return new ModelAndView(model, "alumno/materias_cursando.mustache");
         }, new MustacheTemplateEngine());
+
+
+        // ==================== VER MATERIAS APROBADAS (ANALÍTICO) ====================
+        get("/alumno/aprobadas", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            
+            // 1. Validar sesión y buscar alumno
+            String correoAlumno = req.session().attribute("currentUserUsername");
+            if (correoAlumno == null) {
+                res.redirect("/?error=Debes+iniciar+sesion");
+                return null;
+            }
+
+            Alumno alumno = Alumno.findFirst("correo = ?", correoAlumno);
+            if (alumno == null) {
+                res.redirect("/?error=Alumno+no+encontrado");
+                return null;
+            }
+            int alumnoId = Integer.parseInt(alumno.getId().toString());
+
+            // 2. Traer la lista de materias aprobadas y sus notas
+            String sqlAprobadas = "SELECT m.nombre as nombre_materia, m.codigo, i.nota_final_cursada " +
+                                  "FROM inscripcion i " +
+                                  "INNER JOIN materia m ON i.materia_id = m.id " +
+                                  "WHERE i.alumno_id = ? AND i.estado = 'Aprobada'";
+            
+            List<Map> aprobadas = Base.findAll(sqlAprobadas, alumnoId);
+            model.put("materias_aprobadas", aprobadas);
+            
+            // 3. Calcular el porcentaje de la carrera
+            int totalAprobadas = aprobadas.size();
+            int porcentaje = 0;
+            Object carreraIdObj = alumno.get("carrera_id");
+            
+            if (carreraIdObj != null) {
+                int carreraId = Integer.parseInt(carreraIdObj.toString());
+                
+                // Buscar el plan de estudio activo de esta carrera
+                List<Map> planes = Base.findAll("SELECT id FROM plan_de_estudio WHERE carrera_id = ? AND activo = 1", carreraId);
+                
+                if (!planes.isEmpty()) {
+                    int planId = Integer.parseInt(planes.get(0).get("id").toString());
+                    
+                    // Contar cuántas materias tiene este plan en total en la tabla intermedia
+                    long totalMateriasPlan = Base.count("materias_planes", "plan_de_estudio_id = ?", planId);
+                    
+                    if (totalMateriasPlan > 0) {
+                        // Regla de 3 simple para el porcentaje (redondeado)
+                        porcentaje = (int) Math.round(((double) totalAprobadas / totalMateriasPlan) * 100);
+                    }
+                }
+            }
+
+            model.put("total_aprobadas", totalAprobadas);
+            model.put("porcentaje", porcentaje);
+
+            return new ModelAndView(model, "alumno/materias_aprobadas.mustache");
+        }, new MustacheTemplateEngine());
     }
 
 }

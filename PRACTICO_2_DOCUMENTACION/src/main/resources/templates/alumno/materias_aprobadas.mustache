@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Materias Aprobadas</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border-top: 4px solid #198754; /* Borde verde identificatorio */
+        }
+
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        /* Barra de progreso */
+        .progress-container {
+            background-color: #252525;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .progress-title {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #adb5bd;
+        }
+
+        .progress-bar-bg {
+            background-color: #333;
+            border-radius: 10px;
+            width: 100%;
+            height: 20px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .progress-bar-fill {
+            background-color: #20c997; /* Verde brillante */
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .progress-stats {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #20c997;
+        }
+
+        /* Lista de materias */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background-color: #252525;
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #198754;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .materia-info h3 {
+            margin: 0 0 5px 0;
+            color: #75b798;
+            font-size: 18px;
+        }
+
+        .materia-info p {
+            margin: 0;
+            color: #adb5bd;
+            font-size: 14px;
+        }
+
+        .nota-badge {
+            background-color: #198754;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #aaa;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .btn-secondary { background-color: #495057; display: block; width: 150px; margin: 30px auto 0 auto; text-align: center; padding: 10px 18px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.2s;}
+        .btn-secondary:hover { background-color: #343a40; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Analítico - Materias Aprobadas</h1>
+        </div>
+
+        <div class="progress-container">
+            <p class="progress-title">Progreso de la Carrera</p>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: {{porcentaje}}%;"></div>
+            </div>
+            <div class="progress-stats">
+                {{porcentaje}}% completado ({{total_aprobadas}} materias)
+            </div>
+        </div>
+
+        <ul>
+            {{#materias_aprobadas}}
+                <li>
+                    <div class="materia-info">
+                        <h3>{{nombre_materia}}</h3>
+                        <p>Código: {{codigo}}</p>
+                    </div>
+                    <div class="nota-badge">
+                        Nota: {{nota_final_cursada}}
+                    </div>
+                </li>
+            {{/materias_aprobadas}}
+            
+            {{^materias_aprobadas}}
+                <div class="empty-msg">
+                    Todavía no tenés materias aprobadas registradas en el sistema. ¡A seguir estudiando!
+                </div>
+            {{/materias_aprobadas}}
+        </ul>
+
+        <a href="/dashboard" class="btn-secondary">Volver al Panel</a>
+    </div>
+
+</body>
+</html>
