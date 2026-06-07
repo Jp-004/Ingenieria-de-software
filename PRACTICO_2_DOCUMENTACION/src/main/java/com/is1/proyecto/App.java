@@ -537,6 +537,11 @@ public class App {
                 return "";
             }
 
+            if (!dni.matches("\\d+")) {
+                res.redirect(redirectUrl + "?error=El+DNI+solo+debe+contener+numeros,+sin+puntos+ni+letras");
+                return "";
+            }
+
             try {
                 // VALIDACIÓN: Verificamos que la carrera exista en la BD
                 com.is1.proyecto.models.Carrera carreraExistente = com.is1.proyecto.models.Carrera
@@ -604,8 +609,13 @@ public class App {
                 return "";
             }
 
-            if (!correo.contains("@") || !correo.contains(".")) {
-                res.redirect(redirectUrl + "?error=El+formato+del+correo+electronico+no+es+valido");
+            if (!correo.toLowerCase().endsWith("@uni.edu")) {
+                res.redirect(redirectUrl + "?error=El+correo+electronico+institucional+debe+terminar+en+@uni.edu");
+                return "";
+            }
+
+            if (!dni.matches("\\d+")) {
+                res.redirect(redirectUrl + "?error=El+DNI+solo+debe+contener+numeros,+sin+puntos+ni+letras");
                 return "";
             }
 
