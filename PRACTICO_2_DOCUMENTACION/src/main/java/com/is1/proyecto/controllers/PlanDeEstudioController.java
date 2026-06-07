@@ -37,6 +37,8 @@ public class PlanDeEstudioController {
 
             Map<String, Object> model = new HashMap<>();
 
+            model.put("from", req.queryParams("from"));
+
             // 1. Convertimos el Plan a Map y le inyectamos el nombre de la Carrera
             Map<String, Object> planMap = new HashMap<>(plan.toMap());
 
@@ -57,7 +59,7 @@ public class PlanDeEstudioController {
                 // Si vino de "Ver planes de estudio", vuelve a la lista completa
                 model.put("backUrl", "/plan/list");
             }
-            
+
             // 2. Traemos las materias del plan y las pasamos a Map
             List<Materia> materiasEnPlan = Materia.findBySQL(
                     "SELECT m.* FROM materia m " +
