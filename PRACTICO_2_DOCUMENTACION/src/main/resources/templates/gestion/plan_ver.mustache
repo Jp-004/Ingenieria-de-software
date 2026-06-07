@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materias del Plan de Estudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-5xl mx-auto">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="ti ti-notebook text-blue-600"></i> Estructura del Plan
+                </h1>
+                <p class="text-gray-600 mt-1">
+                    Carrera: <span class="font-semibold text-gray-800">{{plan.carrera_nombre}}</span> | Año de vigencia: <span class="font-semibold text-gray-800">{{plan.anio_vigencia}}</span>
+                </p>
+            </div>
+            <a href="/plan/list?carrera_id={{plan.carrera_id}}&from=carrera" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
+                <i class="ti ti-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-blue-600 text-white">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Código</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Asignatura / Materia</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold">Horas Cátedra</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Correlativas</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 text-gray-700">
+                    {{#materias}}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-sm font-mono font-medium text-gray-500">{{codigo}}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">{{nombre}}</td>
+                        <td class="px-6 py-4 text-sm text-center font-medium">{{horas}} hs</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="block text-gray-600 italic bg-gray-50 p-2 rounded border border-gray-100">
+                                {{correlativas_str}}
+                            </span>
+                        </td>
+                    </tr>
+                    {{/materias}}
+                    
+                    {{^materias}}
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-gray-500">
+                            <i class="ti ti-alert-circle text-3xl block mb-2 text-gray-400"></i>
+                            Este plan de estudio aún no cuenta con materias incorporadas en la base de datos.
+                        </td>
+                    </tr>
+                    {{/materias}}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</body>
+</html>

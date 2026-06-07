@@ -1,16 +1,20 @@
 package com.is1.proyecto.controllers;
 
-import com.is1.proyecto.models.PlanDeEstudio;
-import com.is1.proyecto.models.Materia;
-import spark.ModelAndView;
-import spark.template.mustache.MustacheTemplateEngine;
-import org.javalite.activejdbc.Base;
-import static spark.Spark.*;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
+
+import org.javalite.activejdbc.Base;
+
+import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.PlanDeEstudio;
+
+import spark.ModelAndView;
+import static spark.Spark.get;
+import static spark.Spark.halt;
+import static spark.Spark.post;
+import spark.template.mustache.MustacheTemplateEngine;
 
 public class PlanDeEstudioController {
 
@@ -35,12 +39,25 @@ public class PlanDeEstudioController {
 
             // 1. Convertimos el Plan a Map y le inyectamos el nombre de la Carrera
             Map<String, Object> planMap = new HashMap<>(plan.toMap());
+
+            int estadoActivo = plan.getInteger("activo") != null ? plan.getInteger("activo") : 0;
+            planMap.put("is_activo", estadoActivo == 1);
+            
             com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.get("carrera_id"));
             if (carrera != null) {
                 planMap.put("carrera_nombre", carrera.getString("nombre"));
             }
             model.put("plan", planMap);
 
+            String from = req.queryParams("from");
+            if ("carrera".equals(from)) {
+                // Si vino de carrera, vuelve filtrado por esa carrera
+                model.put("backUrl", "/plan/list?carrera_id=" + plan.get("carrera_id") + "&from=carrera");
+            } else {
+                // Si vino de "Ver planes de estudio", vuelve a la lista completa
+                model.put("backUrl", "/plan/list");
+            }
+            
             // 2. Traemos las materias del plan y las pasamos a Map
             List<Materia> materiasEnPlan = Materia.findBySQL(
                     "SELECT m.* FROM materia m " +
