@@ -1080,10 +1080,30 @@ public class App {
                         correoProfesor);
 
                 if (profe != null) {
-                    // Buscamos solo las materias asignadas a este profesor
+                    // Buscamos las materias asignadas a este profesor
                     java.util.List<com.is1.proyecto.models.Materia> misMaterias = com.is1.proyecto.models.Materia
                             .where("docente_id = ?", profe.getId());
-                    model.put("materias", misMaterias);
+
+                    // Creamos una lista de mapas para inyectarle las horas a cada materia
+                    java.util.List<Map<String, Object>> materiasVista = new java.util.ArrayList<>();
+
+                    for (com.is1.proyecto.models.Materia materia : misMaterias) {
+                        Map<String, Object> matMap = new HashMap<>(materia.toMap());
+
+                        // Consultamos la tabla intermedia para sacar la carga horaria
+                        Object horas = org.javalite.activejdbc.Base.firstCell(
+                                "SELECT horas FROM materias_planes WHERE materia_id = ?", materia.getId());
+
+                        if (horas != null) {
+                            matMap.put("horas", horas);
+                        } else {
+                            matMap.put("horas", "--"); // Por si hay alguna materia sin horas asignadas
+                        }
+
+                        materiasVista.add(matMap);
+                    }
+
+                    model.put("materias", materiasVista);
                 }
             } catch (Exception e) {
                 System.err.println("Error al cargar las materias del profesor: " + e.getMessage());
