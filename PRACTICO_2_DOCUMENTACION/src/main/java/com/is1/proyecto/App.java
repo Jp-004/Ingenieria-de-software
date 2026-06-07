@@ -225,7 +225,7 @@ public class App {
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
-            
+
             // Atrapamos el mensaje de error de eliminación para mostrarlo en el cartel rojo
             String errorMessage = req.queryParams("error");
             if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -258,8 +258,8 @@ public class App {
             return null;
         });
 
-
-        // ==================== PLAN DE ESTUDIO - VER MATERIAS Y CORRELATIVAS ====================
+        // ==================== PLAN DE ESTUDIO - VER MATERIAS Y CORRELATIVAS
+        // ====================
         get("/plan/ver", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             String planId = req.queryParams("id");
@@ -280,36 +280,36 @@ public class App {
             planMap.put("carrera_nombre", carrera != null ? carrera.getNombre() : "Desconocida");
             model.put("plan", planMap);
 
-            // Consulta para traer las materias asociadas a este plan mediante la tabla intermedia materias_planes
+            // Consulta para traer las materias asociadas a este plan mediante la tabla
+            // intermedia materias_planes
             String sqlMaterias = "SELECT m.id, m.nombre, m.codigo, mp.horas " +
-                                 "FROM materias_planes mp " +
-                                 "INNER JOIN materia m ON mp.materia_id = m.id " +
-                                 "WHERE mp.plan_de_estudio_id = ?";
+                    "FROM materias_planes mp " +
+                    "INNER JOIN materia m ON mp.materia_id = m.id " +
+                    "WHERE mp.plan_de_estudio_id = ?";
             java.util.List<java.util.Map> materias = org.javalite.activejdbc.Base.findAll(sqlMaterias, planId);
 
             java.util.List<Map<String, Object>> materiasVista = new java.util.ArrayList<>();
             for (java.util.Map mat : materias) {
                 Map<String, Object> matMap = new HashMap<>(mat);
-                
+
                 String sqlCorrelativas = "SELECT mc.codigo AS cod_correlativa FROM correlatividades c " +
-                                         "INNER JOIN materia mc ON c.correlativa_id = mc.id " +
-                                         "WHERE c.materia_id = ? AND c.plan_de_estudio_id = ?";
-                
+                        "INNER JOIN materia mc ON c.correlativa_id = mc.id " +
+                        "WHERE c.materia_id = ? AND c.plan_de_estudio_id = ?";
+
                 java.util.List<java.util.Map> correlativasList = org.javalite.activejdbc.Base.findAll(
-                        sqlCorrelativas, 
-                        mat.get("id"), 
-                        Integer.parseInt(planId)
-                );
-                
+                        sqlCorrelativas,
+                        mat.get("id"),
+                        Integer.parseInt(planId));
+
                 java.util.List<String> codigosCorr = new java.util.ArrayList<>();
                 for (java.util.Map corr : correlativasList) {
                     Object valorCodigo = corr.get("cod_correlativa");
-                    
+
                     if (valorCodigo != null) {
                         codigosCorr.add(String.valueOf(valorCodigo));
                     }
                 }
-                
+
                 if (codigosCorr.isEmpty()) {
                     matMap.put("correlativas_str", "Ninguna (Materia inicial)");
                 } else {
@@ -1258,7 +1258,35 @@ public class App {
                 for (com.is1.proyecto.models.Inscripcion ins : inscripciones) {
                     com.is1.proyecto.models.Alumno alu = com.is1.proyecto.models.Alumno.findById(ins.get("alumno_id"));
                     if (alu != null) {
-                        alumnosMap.add(alu.toMap());
+                        Map<String, Object> aluMap = new HashMap<>(alu.toMap());
+
+                        // BUSCAR LAS NOTAS DE ESTE ALUMNO EN ESTA MATERIA
+                        java.util.List<java.util.Map> notas = org.javalite.activejdbc.Base.findAll(
+                                "SELECT instancia, nota FROM calificaciones WHERE alumno_id = ? AND materia_id = ?",
+                                alu.getId(), materia.getId());
+
+                        String p1 = "-", p2 = "-", rec = "-", fin = "-";
+                        for (java.util.Map n : notas) {
+                            String inst = (String) n.get("instancia");
+                            String val = n.get("nota").toString();
+
+                            if (inst.equalsIgnoreCase("Primer Parcial"))
+                                p1 = val;
+                            else if (inst.equalsIgnoreCase("Segundo Parcial"))
+                                p2 = val;
+                            else if (inst.equalsIgnoreCase("Recuperatorio"))
+                                rec = val;
+                            else if (inst.equalsIgnoreCase("Examen Final"))
+                                fin = val;
+                        }
+
+                        // Inyectamos las notas al mapa del alumno que viaja a la vista
+                        aluMap.put("nota_p1", p1);
+                        aluMap.put("nota_p2", p2);
+                        aluMap.put("nota_rec", rec);
+                        aluMap.put("nota_final", fin);
+
+                        alumnosMap.add(aluMap);
                     }
                 }
                 model.put("alumnos", alumnosMap);
@@ -1392,7 +1420,8 @@ public class App {
 
                     if (!materiasAsociadas.isEmpty()) {
                         res.redirect(
-                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas" + redireccionFiltro);
+                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas"
+                                        + redireccionFiltro);
                         return "";
                     }
 
