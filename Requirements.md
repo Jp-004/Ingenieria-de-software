@@ -98,111 +98,108 @@ La IA fue sumamente útil para aportar claridad sobre riesgos técnicos y de arq
 
 ```mermaid
 classDiagram
-    class Usuario {
-        <<abstract>>
+    class User {
         +int id
-        +String nombre
-        +String apellido
-        +String email
+        +String name
         +String password
+        +String rango
+        +String ultimo_acceso
         +login()
         +logout()
+        +cambiarContrasena()
     }
 
     class Alumno {
-        +String legajo
-        +Date fechaIngreso
+        +int id
+        +String nombre
+        +String apellido
+        +String correo
+        +String dni
+        +int legajo
+        +String fechaIngreso
         +String estadoAcademico
         +inscribirseAMateria()
-		+inscribiseARendir()
-		+eliminarInscripcion()
+        +inscribirseARendir()
         +verMateriasAprobadas()
-		+verMateriasCursando()
-		+consultarNotasParciales()
+        +verMateriasCursando()
     }
 
-    class Docente {
-        +String legajoDocente
-        +String titulo
-        +registrarNotaParcial() 
-		+registrarNotaFinal()
-		+agregarFechaParcial()
-		+agregarFechaFinal()
-    }
-
-    class Administrativo {
-        +registroProfesor()
-        +registroAlumno()
-		+crearCarrera()
-		+modificarCarrera()
-		+eliminarCarrera()
-		+crearMateria()
-		+modificarMateria()
-		+eliminarMateria()
-		+asignarProfesor()
-		+darDeBajaProfesor()
-		+asignarCodigo()
-		+mesaDeExamen()
-		+crearPlanDeEstudio()
-		+eliminarPlanDeEstudio()		
+    class Profesor {
+        +int id
+        +String nombre
+        +String apellido
+        +String correo
+        +String dni
+        +registrarCalificacion()
+        +asignarFechaExamen()
+        +verAlumnosInscriptos()
     }
 
     class Carrera {
         +int id
         +String nombre
         +String codigo
-		+agregarPlanDeEstudio()
+        +agregarPlanDeEstudio()
     }
 
     class PlanDeEstudio {
         +int id
         +int anioVigencia
         +boolean activo
-		+agregarMateria()
-		+agregarCorrelativas()
-		+agregarHoras()
+        +agregarMateria()
     }
 
     class Materia {
         +int id
         +String nombre
         +String codigo
-		+verAlumnosInscriptosAMateria()
-		+verHorasYCodigoMateria()
     }
 
+    class Inscripcion {
+        +int id
+        +String estado
+        +float nota_final_cursada
+    }
 
     class Calificacion {
         +int id
+        +String instancia
         +float nota
-        +String tipo
-        +Date fecha
-        +boolean aprobado
+        +String fecha
     }
 
-    class MesaExamen {
+    class PeriodoExamen {
         +int id
-        +Date fechaApertura
-		+Date fechaClausura
-        +String llamado
+        +String tipo
+        +String descripcion
+        +String fecha_inicio
+        +String fecha_fin
     }
 
+    class FechaExamen {
+        +int id
+        +String instancia
+        +String fecha
+    }
 
-    Usuario <|-- Alumno
-    Usuario <|-- Docente
-    Usuario <|-- Administrativo
+    %% Relaciones de Autenticación
+    User "1" -- "0..1" Alumno : credenciales
+    User "1" -- "0..1" Profesor : credenciales
 
-    Carrera "1" *-- "1..*" PlanDeEstudio : posee
-    PlanDeEstudio "1" o-- "1..*" Materia : incluye
+    %% Relaciones Académicas Base
+    Carrera "1" *-- "0..*" PlanDeEstudio : posee
+    PlanDeEstudio "1" *-- "0..*" Materia : incluye
     Materia "1" -- "0..*" Materia : correlativa
     Carrera "1" -- "0..*" Alumno : pertenece
-	Docente "1..*" -- "0..*" Materia : posee
-	Alumno "1" -- "0..*" Materia : posee
-	Materia "1" -- "1..*" Calificacion : tiene
-	
-	
 
-    Materia "1" -- "0..*" MesaExamen : tiene
-    MesaExamen "1" -- "0..*" Calificacion : genera
+    %% Relaciones de Cursada
+    Profesor "1" -- "0..*" Materia : dicta
+    Alumno "1" -- "0..*" Inscripcion : cursa
+    Materia "1" -- "0..*" Inscripcion : registra
+    
+    %% Relaciones de Evaluaciones
+    Carrera "1" -- "0..*" PeriodoExamen : habilita
+    Materia "1" -- "0..*" FechaExamen : programa
     Alumno "1" -- "0..*" Calificacion : obtiene
+    Materia "1" -- "0..*" Calificacion : evalua
 ```
