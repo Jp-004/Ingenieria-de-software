@@ -187,7 +187,8 @@ public class App {
 
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
+                    .findAll();
 
             java.util.List<Map<String, Object>> planesVista = new java.util.ArrayList<>();
 
@@ -353,6 +354,16 @@ public class App {
                 req.session().attribute("userId", ac.getId());
                 req.session().attribute("loggedIn", true);
                 req.session().attribute("rango", ac.getRango());
+
+                try {
+                    java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+                    java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
+                            .ofPattern("dd/MM/yyyy HH:mm");
+                    ac.set("ultimo_acceso", ahora.format(formatter));
+                    ac.saveIt();
+                } catch (Exception e) {
+                    System.err.println("No se pudo registrar el último acceso: " + e.getMessage());
+                }
 
                 String rango = ac.getRango();
                 model.put("username", username);
@@ -942,26 +953,32 @@ public class App {
                 nuevaCalificacion.set("fecha", java.time.LocalDate.now().toString());
                 nuevaCalificacion.saveIt();
 
-                // 2. Traer TODAS las notas de este alumno en esta materia para evaluar su estado
-                java.util.List<com.is1.proyecto.models.Calificacion> historialNotas = 
-                    com.is1.proyecto.models.Calificacion.where("alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId), Integer.parseInt(materiaIdStr));
-                
+                // 2. Traer TODAS las notas de este alumno en esta materia para evaluar su
+                // estado
+                java.util.List<com.is1.proyecto.models.Calificacion> historialNotas = com.is1.proyecto.models.Calificacion
+                        .where("alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId),
+                                Integer.parseInt(materiaIdStr));
+
                 Double p1 = null, p2 = null, rec = null, finalExam = null;
-                
+
                 // Mapear las notas a variables
                 for (com.is1.proyecto.models.Calificacion c : historialNotas) {
                     String inst = c.getString("instancia");
                     double n = c.getDouble("nota");
-                    if (inst.equalsIgnoreCase("Primer Parcial")) p1 = n;
-                    else if (inst.equalsIgnoreCase("Segundo Parcial")) p2 = n;
-                    else if (inst.equalsIgnoreCase("Recuperatorio")) rec = n;
-                    else if (inst.equalsIgnoreCase("Examen Final")) finalExam = n;
+                    if (inst.equalsIgnoreCase("Primer Parcial"))
+                        p1 = n;
+                    else if (inst.equalsIgnoreCase("Segundo Parcial"))
+                        p2 = n;
+                    else if (inst.equalsIgnoreCase("Recuperatorio"))
+                        rec = n;
+                    else if (inst.equalsIgnoreCase("Examen Final"))
+                        finalExam = n;
                 }
 
                 // 3. Buscar la inscripción para actualizar su estado general
                 com.is1.proyecto.models.Inscripcion inscripcion = com.is1.proyecto.models.Inscripcion.findFirst(
                         "alumno_id = ? AND materia_id = ?", Integer.parseInt(alumnoId), Integer.parseInt(materiaIdStr));
-                
+
                 if (inscripcion != null) {
                     String nuevoEstado = inscripcion.getString("estado");
                     Double notaFinalGuardar = null;
@@ -970,7 +987,7 @@ public class App {
                     if (finalExam != null && finalExam >= 5) {
                         nuevoEstado = "Aprobada";
                         notaFinalGuardar = finalExam;
-                    } 
+                    }
                     // CASO B: Evaluamos las condiciones de la Cursada
                     else {
                         Double defP1 = p1;
@@ -978,12 +995,16 @@ public class App {
 
                         // Aplicar la lógica del recuperatorio (reemplaza la nota aplazada)
                         if (rec != null) {
-                            if (p1 != null && p1 < 5) defP1 = rec; 
-                            else if (p2 != null && p2 < 5) defP2 = rec;
+                            if (p1 != null && p1 < 5)
+                                defP1 = rec;
+                            else if (p2 != null && p2 < 5)
+                                defP2 = rec;
                             // Si rindió recup para subir nota teniendo ambos aprobados
                             else if (p1 != null && p2 != null) {
-                                if (p1 < p2) defP1 = Math.max(p1, rec);
-                                else defP2 = Math.max(p2, rec);
+                                if (p1 < p2)
+                                    defP1 = Math.max(p1, rec);
+                                else
+                                    defP2 = Math.max(p2, rec);
                             }
                         }
 
@@ -991,8 +1012,10 @@ public class App {
                         if (defP1 != null && defP2 != null) {
                             if (defP1 < 5 || defP2 < 5) {
                                 // Si alguno sigue aplazado y ya rindió recuperatorio, queda Libre
-                                if (rec != null) nuevoEstado = "Libre";
-                                else nuevoEstado = "Cursando"; // Aún puede rendir el recuperatorio
+                                if (rec != null)
+                                    nuevoEstado = "Libre";
+                                else
+                                    nuevoEstado = "Cursando"; // Aún puede rendir el recuperatorio
                             } else {
                                 // Ambos parciales aprobados (>= 5)
                                 double promedio = (defP1 + defP2) / 2.0;
@@ -1003,7 +1026,7 @@ public class App {
                                     nuevoEstado = "Regular"; // Aprobó pero no le da el promedio
                                 }
                             }
-                        } 
+                        }
                         // Si solo tiene evaluado UN parcial hasta ahora
                         else if (defP1 != null || defP2 != null) {
                             Double notaUnica = (defP1 != null) ? defP1 : defP2;
@@ -1282,10 +1305,11 @@ public class App {
             String idStr = req.queryParams("id");
             String nombre = req.queryParams("nombre");
             String codigo = req.queryParams("codigo");
-            String docenteResponsableId = req.queryParams("docente_id"); 
+            String docenteResponsableId = req.queryParams("docente_id");
             String[] colaboradoresIds = req.queryParamsValues("colaboradores"); // Array de checkboxes
 
-            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty() || codigo.trim().isEmpty()) {
+            if (idStr == null || nombre == null || codigo == null || nombre.trim().isEmpty()
+                    || codigo.trim().isEmpty()) {
                 res.redirect("/materia/edit?id=" + idStr + "&error=Nombre+y+codigo+son+obligatorios");
                 return "";
             }
@@ -1294,7 +1318,8 @@ public class App {
                 com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(idStr);
                 if (materia != null) {
                     // Validar que el nuevo código no le pertenezca ya a otra materia distinta
-                    com.is1.proyecto.models.Materia materiaExistente = com.is1.proyecto.models.Materia.findFirst("codigo = ?", codigo);
+                    com.is1.proyecto.models.Materia materiaExistente = com.is1.proyecto.models.Materia
+                            .findFirst("codigo = ?", codigo);
                     if (materiaExistente != null && !materiaExistente.getId().toString().equals(idStr)) {
                         res.redirect("/materia/edit?id=" + idStr + "&error=El+codigo+ya+esta+en+uso+por+otra+materia");
                         return "";
@@ -1309,16 +1334,16 @@ public class App {
                     materia.saveIt();
 
                     // Actualizar colaboradores: borramos los anteriores y guardamos los nuevos
-                    org.javalite.activejdbc.Base.exec("DELETE FROM materias_colaboradores WHERE materia_id = ?", materia.getId());
-                    
+                    org.javalite.activejdbc.Base.exec("DELETE FROM materias_colaboradores WHERE materia_id = ?",
+                            materia.getId());
+
                     if (colaboradoresIds != null) {
                         for (String colabId : colaboradoresIds) {
                             // Evitar que el responsable se ponga también como colaborador a sí mismo
                             if (!colabId.equals(docenteResponsableId)) {
                                 org.javalite.activejdbc.Base.exec(
-                                    "INSERT INTO materias_colaboradores (materia_id, profesor_id) VALUES (?, ?)", 
-                                    materia.getId(), Integer.parseInt(colabId)
-                                );
+                                        "INSERT INTO materias_colaboradores (materia_id, profesor_id) VALUES (?, ?)",
+                                        materia.getId(), Integer.parseInt(colabId));
                             }
                         }
                     }
@@ -1420,6 +1445,82 @@ public class App {
                 return "";
             }
         });
+
+        // ==================== MI PERFIL ====================
+
+        get("/profile", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes+iniciar+sesion+primero");
+                return null;
+            }
+
+            String currentUsername = req.session().attribute("currentUserUsername");
+
+            try {
+                com.is1.proyecto.models.User usuario = com.is1.proyecto.models.User.findFirst("name = ?",
+                        currentUsername);
+                if (usuario != null) {
+                    model.put("usuario", usuario.toMap());
+                }
+            } catch (Exception e) {
+                System.err.println("Error al cargar perfil: " + e.getMessage());
+            }
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null)
+                model.put("errorMessage", errorMessage);
+            String successMessage = req.queryParams("message");
+            if (successMessage != null)
+                model.put("successMessage", successMessage);
+
+            return new ModelAndView(model, "admin/profile.mustache");
+        }, new MustacheTemplateEngine());
+
+        post("/profile/password", (req, res) -> {
+            String actual = req.queryParams("password_actual");
+            String nueva = req.queryParams("password_nueva");
+            String confirmar = req.queryParams("password_confirmar");
+
+            if (actual == null || nueva == null || confirmar == null || actual.trim().isEmpty()
+                    || nueva.trim().isEmpty() || confirmar.trim().isEmpty()) {
+                res.redirect("/profile?error=Todos+los+campos+son+obligatorios");
+                return "";
+            }
+
+            if (!nueva.equals(confirmar)) {
+                res.redirect("/profile?error=Las+contraseñas+nuevas+no+coinciden");
+                return "";
+            }
+
+            String currentUsername = req.session().attribute("currentUserUsername");
+
+            try {
+                com.is1.proyecto.models.User usuario = com.is1.proyecto.models.User.findFirst("name = ?",
+                        currentUsername);
+
+                if (usuario != null) {
+                    // Validamos la contraseña actual
+                    if (org.mindrot.jbcrypt.BCrypt.checkpw(actual, usuario.getString("password"))) {
+                        // Si coincide, encriptamos la nueva y la guardamos
+                        String hashNuevo = org.mindrot.jbcrypt.BCrypt.hashpw(nueva,
+                                org.mindrot.jbcrypt.BCrypt.gensalt());
+                        usuario.set("password", hashNuevo);
+                        usuario.saveIt();
+                        res.redirect("/profile?message=Contrasena+actualizada+con+exito");
+                    } else {
+                        res.redirect("/profile?error=La+contrasena+actual+es+incorrecta");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error al cambiar contraseña: " + e.getMessage());
+                res.redirect("/profile?error=Error+interno+al+procesar+la+solicitud");
+            }
+            return "";
+        });
+
     } // Fin del método main
 }
 // Fin de la clase App
