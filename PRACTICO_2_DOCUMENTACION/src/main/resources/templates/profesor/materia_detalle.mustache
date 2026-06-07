@@ -50,11 +50,22 @@
                         </thead>
                         <tbody class="divide-y text-gray-700">
                             {{#alumnos}}
-                            <tr class="hover:bg-gray-50 transition">
+                            <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="document.getElementById('notas-{{id}}').classList.toggle('hidden')">
                                 <td class="p-3 font-semibold text-blue-600">{{legajo}}</td>
                                 <td class="p-3">{{apellido}}, {{nombre}}</td>
                                 <td class="p-3 text-sm">{{dni}}</td>
                                 <td class="p-3 text-sm text-gray-500">{{correo}}</td>
+                            </tr>
+                            
+                            <tr id="notas-{{id}}" class="hidden bg-blue-50 border-b">
+                                <td colspan="4" class="p-4">
+                                    <div class="flex justify-around text-sm">
+                                        <div><span class="font-bold text-gray-700">1° Parcial:</span> <span class="bg-white px-2 py-1 rounded border shadow-sm">{{nota_p1}}</span></div>
+                                        <div><span class="font-bold text-gray-700">2° Parcial:</span> <span class="bg-white px-2 py-1 rounded border shadow-sm">{{nota_p2}}</span></div>
+                                        <div><span class="font-bold text-gray-700">Recup:</span> <span class="bg-white px-2 py-1 rounded border shadow-sm">{{nota_rec}}</span></div>
+                                        <div><span class="font-bold text-gray-700">Final:</span> <span class="bg-white px-2 py-1 rounded border shadow-sm">{{nota_final}}</span></div>
+                                    </div>
+                                </td>
                             </tr>
                             {{/alumnos}}
                             
