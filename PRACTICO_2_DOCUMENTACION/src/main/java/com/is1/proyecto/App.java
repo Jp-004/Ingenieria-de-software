@@ -238,6 +238,8 @@ public class App {
         // ==================== PLAN DE ESTUDIO - CAMBIAR ESTADO ====================
         post("/plan/toggle-estado", (req, res) -> {
             String idStr = req.queryParams("id");
+            String from = req.queryParams("from");
+
             if (idStr != null && !idStr.isEmpty()) {
                 try {
                     com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(idStr);
@@ -245,7 +247,8 @@ public class App {
                         int estadoActual = plan.getInteger("activo") != null ? plan.getInteger("activo") : 0;
                         plan.set("activo", estadoActual == 1 ? 0 : 1);
                         plan.saveIt();
-                        res.redirect("/plan/edit?id=" + idStr + "&message=Estado+del+plan+actualizado+exitosamente");
+                        String appendFrom = (from != null && !from.isEmpty()) ? "&from=" + from : "";
+                        res.redirect("/plan/edit?id=" + idStr + appendFrom + "&message=Estado+del+plan+actualizado+exitosamente");
                         return null;
                     }
                 } catch (Exception e) {
