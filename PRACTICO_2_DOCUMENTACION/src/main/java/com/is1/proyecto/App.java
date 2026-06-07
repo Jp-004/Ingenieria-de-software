@@ -157,7 +157,7 @@ public class App {
                 model.put("errorMessage", errorMessage);
             }
 
-            // ACÁ ESTÁ LA MAGIA: Mandamos la lista de carreras a la vista
+            // Mandamos la lista de carreras a la vista
             model.put("carreras", com.is1.proyecto.models.Carrera.findAll());
 
             return new ModelAndView(model, "admin/alumno_form.mustache");
@@ -185,22 +185,27 @@ public class App {
             return new ModelAndView(new HashMap<>(), "gestion/gestion_carreras.mustache");
         }, new MustacheTemplateEngine());
 
+        // ================== PLAN DE ESTUDIO - LISTAR ============================
         get("/plan/list", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes = com.is1.proyecto.models.PlanDeEstudio
-                    .findAll();
+            String carreraIdFiltro = req.queryParams("carrera_id");
+            java.util.List<com.is1.proyecto.models.PlanDeEstudio> planes;
+
+            // Filtra si viene un ID de carrera desde el panel de carreras
+            if (carreraIdFiltro != null && !carreraIdFiltro.isEmpty()) {
+                planes = com.is1.proyecto.models.PlanDeEstudio.where("carrera_id = ?", carreraIdFiltro);
+            } else {
+                planes = com.is1.proyecto.models.PlanDeEstudio.findAll();
+            }
 
             java.util.List<Map<String, Object>> planesVista = new java.util.ArrayList<>();
-
             for (com.is1.proyecto.models.PlanDeEstudio plan : planes) {
                 Map<String, Object> planMap = new HashMap<>(plan.toMap());
+                int estadoActivo = plan.getInteger("activo") != null ? plan.getInteger("activo") : 0;
+                planMap.put("is_activo", estadoActivo == 1);
 
                 com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
-                if (carrera != null) {
-                    planMap.put("carrera_nombre", carrera.getNombre());
-                } else {
-                    planMap.put("carrera_nombre", "Sin carrera");
-                }
+                planMap.put("carrera_nombre", carrera != null ? carrera.getNombre() : "Sin carrera");
                 planesVista.add(planMap);
             }
 
@@ -213,11 +218,108 @@ public class App {
                 model.put("backUrl", "/gestion/carreras");
             }
 
+            model.put("carrera_id", carreraIdFiltro);
+            model.put("from", from);
+
             String successMessage = req.queryParams("message");
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
+            
+            // Atrapamos el mensaje de error de eliminación para mostrarlo en el cartel rojo
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
             return new ModelAndView(model, "gestion/plan_list.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ==================== PLAN DE ESTUDIO - CAMBIAR ESTADO ====================
+        post("/plan/toggle-estado", (req, res) -> {
+            String idStr = req.queryParams("id");
+            if (idStr != null && !idStr.isEmpty()) {
+                try {
+                    com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(idStr);
+                    if (plan != null) {
+                        int estadoActual = plan.getInteger("activo") != null ? plan.getInteger("activo") : 0;
+                        plan.set("activo", estadoActual == 1 ? 0 : 1);
+                        plan.saveIt();
+                        res.redirect("/plan/edit?id=" + idStr + "&message=Estado+del+plan+actualizado+exitosamente");
+                        return null;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cambiar estado del plan: " + e.getMessage());
+                    res.redirect("/plan/list?error=Error+interno+al+cambiar+el+estado");
+                    return null;
+                }
+            }
+            res.redirect("/plan/list?error=ID+de+plan+no+especificado");
+            return null;
+        });
+
+
+        // ==================== PLAN DE ESTUDIO - VER MATERIAS Y CORRELATIVAS ====================
+        get("/plan/ver", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String planId = req.queryParams("id");
+
+            if (planId == null || planId.isEmpty()) {
+                res.redirect("/plan/list?error=ID+de+plan+no+proporcionado");
+                return null;
+            }
+
+            com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(planId);
+            if (plan == null) {
+                res.redirect("/plan/list?error=Plan+no+encontrado");
+                return null;
+            }
+
+            Map<String, Object> planMap = new HashMap<>(plan.toMap());
+            com.is1.proyecto.models.Carrera carrera = com.is1.proyecto.models.Carrera.findById(plan.getCarreraId());
+            planMap.put("carrera_nombre", carrera != null ? carrera.getNombre() : "Desconocida");
+            model.put("plan", planMap);
+
+            // Consulta para traer las materias asociadas a este plan mediante la tabla intermedia materias_planes
+            String sqlMaterias = "SELECT m.id, m.nombre, m.codigo, mp.horas " +
+                                 "FROM materias_planes mp " +
+                                 "INNER JOIN materia m ON mp.materia_id = m.id " +
+                                 "WHERE mp.plan_de_estudio_id = ?";
+            java.util.List<java.util.Map> materias = org.javalite.activejdbc.Base.findAll(sqlMaterias, planId);
+
+            java.util.List<Map<String, Object>> materiasVista = new java.util.ArrayList<>();
+            for (java.util.Map mat : materias) {
+                Map<String, Object> matMap = new HashMap<>(mat);
+                
+                String sqlCorrelativas = "SELECT mc.codigo AS cod_correlativa FROM correlatividades c " +
+                                         "INNER JOIN materia mc ON c.correlativa_id = mc.id " +
+                                         "WHERE c.materia_id = ? AND c.plan_de_estudio_id = ?";
+                
+                java.util.List<java.util.Map> correlativasList = org.javalite.activejdbc.Base.findAll(
+                        sqlCorrelativas, 
+                        mat.get("id"), 
+                        Integer.parseInt(planId)
+                );
+                
+                java.util.List<String> codigosCorr = new java.util.ArrayList<>();
+                for (java.util.Map corr : correlativasList) {
+                    Object valorCodigo = corr.get("cod_correlativa");
+                    
+                    if (valorCodigo != null) {
+                        codigosCorr.add(String.valueOf(valorCodigo));
+                    }
+                }
+                
+                if (codigosCorr.isEmpty()) {
+                    matMap.put("correlativas_str", "Ninguna (Materia inicial)");
+                } else {
+                    matMap.put("correlativas_str", String.join(", ", codigosCorr));
+                }
+                materiasVista.add(matMap);
+            }
+
+            model.put("materias", materiasVista);
+            return new ModelAndView(model, "gestion/plan_ver.mustache");
         }, new MustacheTemplateEngine());
 
         get("/materia/list", (req, res) -> {
@@ -797,6 +899,20 @@ public class App {
             java.util.List<com.is1.proyecto.models.Carrera> carreras = com.is1.proyecto.models.Carrera.findAll();
             model.put("carreras", carreras);
 
+            String from = req.queryParams("from");
+            String carreraId = req.queryParams("carrera_id");
+
+            if ("carrera".equals(from) && carreraId != null && !carreraId.isEmpty()) {
+                // Caso 1: Si venía de una carrera, regresa a la lista filtrada de esa carrera
+                model.put("cancelUrl", "/plan/list?carrera_id=" + carreraId + "&from=carrera");
+            } else if ("gestion".equals(from)) {
+                // Caso 2: Si venía del panel principal de gestión
+                model.put("cancelUrl", "/gestion/carreras");
+            } else {
+                // Caso 3: Comportamiento por defecto (Lista global)
+                model.put("cancelUrl", "/plan/list");
+            }
+
             // Manejo de mensajes de error
             String errorKey = req.queryParams("error");
             if (errorKey != null && !errorKey.isEmpty()) {
@@ -1247,19 +1363,22 @@ public class App {
                 com.is1.proyecto.models.PlanDeEstudio plan = com.is1.proyecto.models.PlanDeEstudio.findById(idStr);
                 if (plan != null) {
 
+                    String carreraId = plan.getString("carrera_id");
+                    String redireccionFiltro = "&carrera_id=" + carreraId + "&from=carrera";
+
                     // Regla de Integridad
                     java.util.List<java.util.Map> materiasAsociadas = org.javalite.activejdbc.Base.findAll(
                             "SELECT 1 FROM materias_planes WHERE plan_de_estudio_id = ?", idStr);
 
                     if (!materiasAsociadas.isEmpty()) {
                         res.redirect(
-                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas");
+                                "/plan/list?error=No+se+puede+eliminar+el+plan+porque+tiene+materias+asociadas" + redireccionFiltro);
                         return "";
                     }
 
                     // Borramos y avisamos con éxito
                     plan.delete();
-                    res.redirect("/plan/list?message=Plan+de+estudio+eliminado+exitosamente");
+                    res.redirect("/plan/list?message=Plan+de+estudio+eliminado+exitosamente" + redireccionFiltro);
                     return "";
                 } else {
                     res.redirect("/plan/list?error=Plan+de+estudio+no+encontrado+en+la+base+de+datos");

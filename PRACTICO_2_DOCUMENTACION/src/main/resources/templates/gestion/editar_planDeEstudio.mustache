@@ -15,19 +15,50 @@
     <div class="min-h-screen p-4 flex flex-col items-center py-10">
         
         <div class="w-full max-w-4xl flex justify-between items-center mb-6">
-            <a href="/plan/list" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
-                <i class="ti ti-arrow-left"></i> Volver a la lista
+            <a href="{{backUrl}}" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
+                <i class="ti ti-arrow-left"></i> Volver
             </a>
         </div>
 
         <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             
-            <div class="bg-blue-600 text-white px-8 py-6">
-                <h1 class="text-3xl font-bold flex items-center gap-3">
-                    <i class="ti ti-notebook"></i> 
-                    Plan de Estudio: {{plan.carrera_nombre}}
-                </h1>
-                <p class="text-blue-100 mt-2 text-lg">Año de vigencia: <span class="font-semibold">{{plan.anio_vigencia}}</span> | ID Interno: {{plan.id}}</p>
+            <div class="bg-blue-600 text-white px-8 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold flex items-center gap-3">
+                        <i class="ti ti-notebook"></i> 
+                        Plan de Estudio: {{plan.carrera_nombre}}
+                    </h1>
+                    <p class="text-blue-100 mt-2 text-lg">Año de vigencia: <span class="font-semibold">{{plan.anio_vigencia}}</span> | ID Interno: {{plan.id}}</p>
+                </div>
+
+                <div class="flex items-center gap-3 bg-blue-700/50 border border-blue-500 p-3 rounded-lg backdrop-blur-sm w-full sm:w-auto justify-between sm:justify-start">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-blue-200">Estado:</span>
+                        {{#plan.is_activo}}
+                        <span class="px-2.5 py-0.5 bg-green-500 text-white text-xs rounded-full font-bold uppercase tracking-wider shadow-sm">Activo</span>
+                        {{/plan.is_activo}}
+
+                        {{^plan.is_activo}}
+                        <span class="px-2.5 py-0.5 bg-red-500 text-white text-xs rounded-full font-bold uppercase tracking-wider shadow-sm">Desactivado</span>
+                        {{/plan.is_activo}}
+                    </div>
+                    
+                    <form action="/plan/toggle-estado" method="POST" class="m-0">
+                        <input type="hidden" name="id" value="{{plan.id}}">
+                        
+                        {{#plan.is_activo}}
+                        <button type="submit" class="px-3 py-1 text-xs bg-red-600 text-white font-bold rounded hover:bg-red-700 transition shadow-md flex items-center gap-1">
+                            <i class="ti ti-power"></i> Desactivar
+                        </button>
+                        {{/plan.is_activo}}
+
+                        {{^plan.is_activo}}
+                        <button type="submit" class="px-3 py-1 text-xs bg-green-500 text-white font-bold rounded hover:bg-green-600 transition shadow-md flex items-center gap-1">
+                            <i class="ti ti-power"></i> Activar
+                        </button>
+                        {{/plan.is_activo}}
+                    </form>
+                </div>
             </div>
 
             <div class="p-8 space-y-8">
