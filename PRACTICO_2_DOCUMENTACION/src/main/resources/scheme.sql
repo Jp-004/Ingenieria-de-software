@@ -12,6 +12,7 @@ CREATE TABLE users (
     name TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     rango TEXT NOT NULL,
+    ultimo_acceso TEXT,
     CONSTRAINT CHK_rango CHECK (rango IN ('Admin', 'Profesor', 'Alumno'))
 );
 
