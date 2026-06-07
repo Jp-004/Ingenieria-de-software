@@ -248,7 +248,8 @@ public class App {
                         plan.set("activo", estadoActual == 1 ? 0 : 1);
                         plan.saveIt();
                         String appendFrom = (from != null && !from.isEmpty()) ? "&from=" + from : "";
-                        res.redirect("/plan/edit?id=" + idStr + appendFrom + "&message=Estado+del+plan+actualizado+exitosamente");
+                        res.redirect("/plan/edit?id=" + idStr + appendFrom
+                                + "&message=Estado+del+plan+actualizado+exitosamente");
                         return null;
                     }
                 } catch (Exception e) {
@@ -1313,6 +1314,12 @@ public class App {
                 }
                 model.put("fechas", fechasMap);
 
+                java.util.List<Map<String, Object>> periodosMap = new java.util.ArrayList<>();
+                for (org.javalite.activejdbc.Model p : com.is1.proyecto.models.PeriodoExamen.findAll()) {
+                    periodosMap.add(p.toMap());
+                }
+                model.put("periodos", periodosMap);
+
             } catch (Exception e) {
                 System.err.println("Error al cargar detalle de materia: " + e.getMessage());
             }
@@ -1370,8 +1377,8 @@ public class App {
                 // REGLA 1 ACTUALIZADA: Validar rango de fecha Y que coincida el TIPO
                 // (Parcial/Final)
                 long dentroDePeriodo = com.is1.proyecto.models.PeriodoExamen.count(
-                        "carrera_id = ? AND tipo = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
-                        carreraId, tipoRequerido, fecha, fecha);
+                        "tipo = ? AND ? >= fecha_inicio AND ? <= fecha_fin",
+                        tipoRequerido, fecha, fecha);
 
                 if (dentroDePeriodo == 0) {
                     res.redirect(redirectUrl
@@ -1557,14 +1564,6 @@ public class App {
             }
 
             try {
-                // SOLUCIÓN CORREGIDA: Usamos org.javalite.activejdbc.Model en el for para
-                // evitar el error de casteo
-                java.util.List<Map<String, Object>> carrerasMap = new java.util.ArrayList<>();
-                for (org.javalite.activejdbc.Model c : com.is1.proyecto.models.Carrera.findAll()) {
-                    carrerasMap.add(c.toMap());
-                }
-                model.put("carreras", carrerasMap);
-
                 java.util.List<Map<String, Object>> periodosMap = new java.util.ArrayList<>();
                 for (org.javalite.activejdbc.Model p : com.is1.proyecto.models.PeriodoExamen.findAll()) {
                     periodosMap.add(p.toMap());
@@ -1586,7 +1585,6 @@ public class App {
         }, new MustacheTemplateEngine());
 
         post("/gestion/periodos/create", (req, res) -> {
-            String carreraIdStr = req.queryParams("carrera_id");
             String tipo = req.queryParams("tipo"); // 'Parcial' o 'Final'
             String descripcion = req.queryParams("descripcion");
             String fechaInicio = req.queryParams("fecha_inicio");
@@ -1594,8 +1592,7 @@ public class App {
 
             String redirectUrl = "/gestion/periodos";
 
-            if (carreraIdStr == null || tipo == null || descripcion == null || fechaInicio == null
-                    || fechaFin == null) {
+            if (tipo == null || descripcion == null || fechaInicio == null || fechaFin == null) {
                 res.redirect(redirectUrl + "?error=Todos+los+campos+son+obligatorios");
                 return "";
             }
@@ -1610,7 +1607,6 @@ public class App {
                 }
 
                 com.is1.proyecto.models.PeriodoExamen nuevoPeriodo = new com.is1.proyecto.models.PeriodoExamen();
-                nuevoPeriodo.set("carrera_id", Integer.parseInt(carreraIdStr));
                 nuevoPeriodo.set("tipo", tipo);
                 nuevoPeriodo.set("descripcion", descripcion);
                 nuevoPeriodo.set("fecha_inicio", fechaInicio);
