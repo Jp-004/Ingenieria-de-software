@@ -76,8 +76,8 @@ CREATE TABLE IF NOT EXISTS calificaciones (
     instancia VARCHAR(50) NOT NULL, 
     nota REAL NOT NULL,
     fecha TEXT,
-    FOREIGN KEY (alumno_id) REFERENCES alumnos(id),
-    FOREIGN KEY (materia_id) REFERENCES materias(id)
+    FOREIGN KEY (alumno_id) REFERENCES alumno(id),
+    FOREIGN KEY (materia_id) REFERENCES materia(id)
 );
 
 CREATE TABLE IF NOT EXISTS periodo_examen (
@@ -85,8 +85,7 @@ CREATE TABLE IF NOT EXISTS periodo_examen (
     tipo TEXT NOT NULL,         
     descripcion TEXT NOT NULL,  
     fecha_inicio TEXT NOT NULL, 
-    fecha_fin TEXT NOT NULL,    
-    FOREIGN KEY (id) REFERENCES carrera(id)
+    fecha_fin TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS fecha_examen (
@@ -120,8 +119,8 @@ CREATE TABLE materias_colaboradores (
     materia_id INTEGER NOT NULL,
     profesor_id INTEGER NOT NULL,
     PRIMARY KEY (materia_id, profesor_id),
-    FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE,
-    FOREIGN KEY (profesor_id) REFERENCES profesores(id) ON DELETE CASCADE
+    FOREIGN KEY (materia_id) REFERENCES materia(id) ON DELETE CASCADE,
+    FOREIGN KEY (profesor_id) REFERENCES profesore(id) ON DELETE CASCADE
 );
 
 CREATE TABLE inscripcion_examen (
