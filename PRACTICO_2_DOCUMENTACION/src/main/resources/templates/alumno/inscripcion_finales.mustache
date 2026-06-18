@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Inscripción a Finales</title>
     <style>
+        .btn-rojo { background-color: #dc3545; font-size: 13px; padding: 6px 12px; }
+        .btn-rojo:hover { background-color: #bb2d3b; }
         body {
             background-color: #1a1a1a;
             color: #f0f0f0;
@@ -79,12 +81,24 @@
                         <p>Fecha de la mesa: <strong>{{fecha}}</strong></p>
                         <span class="condicion">Rinde en condición: {{estado_cursada}}</span>
                     </div>
-                    <div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
                         {{#tiene_nota}}
                             <div class="nota-badge">Nota: {{nota}}</div>
                         {{/tiene_nota}}
+                        
                         {{^tiene_nota}}
                             <div class="nota-pendiente">{{nota}}</div>
+                            
+                            {{#puede_cancelar}}
+                                <form action="/alumno/cancelar-final" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="fecha_id" value="{{fecha_id}}">
+                                    <button type="submit" class="btn btn-rojo" onclick="return confirm('¿Seguro que querés cancelar la inscripción a este final?');">Cancelar Inscripción</button>
+                                </form>
+                            {{/puede_cancelar}}
+                            
+                            {{^puede_cancelar}}
+                                <small style="color: #ff6b6b; font-weight: bold; font-size: 12px; text-align: right;">Ya no es posible cancelar<br>(Faltan menos de 2 días)</small>
+                            {{/puede_cancelar}}
                         {{/tiene_nota}}
                     </div>
                 </div>

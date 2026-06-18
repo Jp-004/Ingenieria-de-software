@@ -302,12 +302,64 @@ public class AlumnoMateriasController {
             }
             int alumnoId = Integer.parseInt(alumno.getId().toString());
 
-            String sqlMaterias = "SELECT materia_id, estado FROM inscripcion WHERE alumno_id = ? AND estado IN ('Regular', 'Regularizada', 'Libre')";
-            List<Map> materiasHabilitadas = Base.findAll(sqlMaterias, alumnoId);
-            
             List<Map<String, Object>> finalesDisponibles = new ArrayList<>();
             List<Map<String, Object>> misInscripciones = new ArrayList<>();
 
+            // --- PARTE 1: MIS INSCRIPCIONES (Se muestran siempre, incluso si ya aprobó el final) ---
+            String sqlInscriptos = "SELECT ie.fecha_examen_id, fe.materia_id, fe.fecha, fe.instancia, m.nombre as nombre_materia " +
+                                   "FROM inscripcion_examen ie " +
+                                   "INNER JOIN fecha_examen fe ON ie.fecha_examen_id = fe.id " +
+                                   "INNER JOIN materia m ON fe.materia_id = m.id " +
+                                   "WHERE ie.alumno_id = ?";
+            
+            List<Map> inscriptos = Base.findAll(sqlInscriptos, alumnoId);
+
+            for (Map f : inscriptos) {
+                int fechaId = Integer.parseInt(f.get("fecha_examen_id").toString());
+                int materiaId = Integer.parseInt(f.get("materia_id").toString());
+                String fechaStr = (String) f.get("fecha");
+                
+                // --- ACÁ ESTÁ LA CORRECCIÓN: Usamos findAll en lugar de findFirst ---
+                List<Map> insc = Base.findAll("SELECT estado FROM inscripcion WHERE alumno_id = ? AND materia_id = ?", alumnoId, materiaId);
+                String estadoCursada = !insc.isEmpty() ? (String) insc.get(0).get("estado") : "Desconocido";
+
+                Map<String, Object> item = new HashMap<>();
+                item.put("materia", f.get("nombre_materia"));
+                item.put("fecha", fechaStr);
+                item.put("instancia", f.get("instancia"));
+                item.put("estado_cursada", estadoCursada);
+                item.put("fecha_id", fechaId);
+
+                // Buscamos si el profesor ya le cargó la nota de este final
+                List<Map> califs = Base.findAll("SELECT nota FROM calificaciones WHERE alumno_id = ? AND materia_id = ? AND instancia = 'Examen Final'", alumnoId, materiaId);
+                
+                if (!califs.isEmpty()) {
+                    item.put("nota", califs.get(0).get("nota"));
+                    item.put("tiene_nota", true);
+                    item.put("puede_cancelar", false); // Si ya tiene nota, es imposible cancelar
+                } else {
+                    item.put("nota", "Pendiente de corrección");
+                    item.put("tiene_nota", false);
+
+                    // Lógica para saber si puede cancelar
+                    java.time.LocalDate fechaExamenLD = java.time.LocalDate.parse(fechaStr);
+                    java.time.LocalDate hoy = java.time.LocalDate.now();
+                    long diasFaltantes = java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaExamenLD);
+                    
+                    if (diasFaltantes >= 2) {
+                        item.put("puede_cancelar", true);
+                    } else {
+                        item.put("puede_cancelar", false);
+                    }
+                }
+                misInscripciones.add(item);
+            }
+
+
+            // --- PARTE 2: FINALES DISPONIBLES (Solo materias Regulares/Libres donde NO esté inscripto) ---
+            String sqlMateriasHabilitadas = "SELECT materia_id, estado FROM inscripcion WHERE alumno_id = ? AND estado IN ('Regular', 'Regularizada', 'Libre')";
+            List<Map> materiasHabilitadas = Base.findAll(sqlMateriasHabilitadas, alumnoId);
+            
             for (Map mat : materiasHabilitadas) {
                 int materiaId = Integer.parseInt(mat.get("materia_id").toString());
                 String estadoCursada = (String) mat.get("estado");
@@ -315,34 +367,21 @@ public class AlumnoMateriasController {
                 com.is1.proyecto.models.Materia materia = com.is1.proyecto.models.Materia.findById(materiaId);
                 String nombreMateria = materia != null ? materia.getString("nombre") : "Materia Desconocida";
 
-                // ACÁ ESTÁ EL FILTRO PARA QUE SOLO MUESTRE FINALES
                 List<Map> fechas = Base.findAll("SELECT id, fecha, instancia FROM fecha_examen WHERE materia_id = ? AND instancia = 'Examen Final'", materiaId);
 
                 for (Map f : fechas) {
                     int fechaId = Integer.parseInt(f.get("id").toString());
-                    String fechaStr = (String) f.get("fecha");
-                    String instancia = (String) f.get("instancia");
+                    long estaInscripto = Base.count("inscripcion_examen", "alumno_id = ? AND fecha_examen_id = ?", alumnoId, fechaId);
 
-                    long inscripto = Base.count("inscripcion_examen", "alumno_id = ? AND fecha_examen_id = ?", alumnoId, fechaId);
-
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("materia", nombreMateria);
-                    item.put("fecha", fechaStr);
-                    item.put("instancia", instancia);
-                    item.put("estado_cursada", estadoCursada);
-                    item.put("fecha_id", fechaId);
-
-                    if (inscripto > 0) {
-                        List<Map> califs = Base.findAll("SELECT nota FROM calificaciones WHERE alumno_id = ? AND materia_id = ? AND instancia = 'Examen Final'", alumnoId, materiaId);
-                        if (!califs.isEmpty()) {
-                            item.put("nota", califs.get(0).get("nota"));
-                            item.put("tiene_nota", true);
-                        } else {
-                            item.put("nota", "Pendiente de corrección");
-                            item.put("tiene_nota", false);
-                        }
-                        misInscripciones.add(item);
-                    } else {
+                    // Si no está inscripto a esta fecha, se la mostramos para que pueda anotarse
+                    if (estaInscripto == 0) {
+                        Map<String, Object> item = new HashMap<>();
+                        item.put("materia", nombreMateria);
+                        item.put("fecha", f.get("fecha"));
+                        item.put("instancia", f.get("instancia"));
+                        item.put("estado_cursada", estadoCursada);
+                        item.put("fecha_id", fechaId);
+                        
                         finalesDisponibles.add(item);
                     }
                 }
@@ -372,10 +411,76 @@ public class AlumnoMateriasController {
                     Base.exec(
                             "INSERT INTO inscripcion_examen (alumno_id, fecha_examen_id, fecha_inscripcion) VALUES (?, ?, ?)",
                             alumno.getId(), Integer.parseInt(fechaIdStr), java.time.LocalDate.now().toString());
-                    res.redirect("/alumno/finales?message=Inscripcion+al+examen+exitosa.+¡Exitos!");
+                    res.redirect("/alumno/finales?message=Inscripcion+al+examen+exitosa.+Exitos!");
                 } catch (Exception e) {
                     System.err.println("Error al inscribirse al final: " + e.getMessage());
                     res.redirect("/alumno/finales?error=Error+interno+al+procesar+la+inscripcion");
+                }
+            } else {
+                res.redirect("/alumno/finales?error=Datos+invalidos");
+            }
+            return "";
+        });// ==================== LÓGICA: CANCELAR INSCRIPCIÓN A FINAL ====================
+        post("/alumno/cancelar-final", (req, res) -> {
+            String fechaIdStr = req.queryParams("fecha_id");
+            String correo = req.session().attribute("currentUserUsername");
+            Alumno alumno = Alumno.findFirst("correo = ?", correo);
+
+            if (alumno != null && fechaIdStr != null && !fechaIdStr.isEmpty()) {
+                try {
+                    // Primero verificamos la fecha por seguridad (por si alguien intenta hackear el botón)
+                    List<Map> fechas = Base.findAll("SELECT fecha FROM fecha_examen WHERE id = ?", fechaIdStr);
+                    if (!fechas.isEmpty()) {
+                        String fechaStr = (String) fechas.get(0).get("fecha");
+                        java.time.LocalDate fechaExamenLD = java.time.LocalDate.parse(fechaStr);
+                        java.time.LocalDate hoy = java.time.LocalDate.now();
+                        long diasFaltantes = java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaExamenLD);
+
+                        if (diasFaltantes >= 2) {
+                            // Si todo está bien, lo borramos de la lista de asistencia
+                            Base.exec("DELETE FROM inscripcion_examen WHERE alumno_id = ? AND fecha_examen_id = ?", alumno.getId(), Integer.parseInt(fechaIdStr));
+                            res.redirect("/alumno/finales?message=Inscripcion+cancelada+exitosamente");
+                        } else {
+                            res.redirect("/alumno/finales?error=No+se+puede+cancelar+con+menos+de+48+horas+de+anticipacion");
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cancelar el final: " + e.getMessage());
+                    res.redirect("/alumno/finales?error=Error+interno+al+procesar+la+cancelacion");
+                }
+            } else {
+                res.redirect("/alumno/finales?error=Datos+invalidos");
+            }
+            return "";
+        });
+        
+        // ==================== LÓGICA: CANCELAR INSCRIPCIÓN A FINAL ====================
+        post("/alumno/cancelar-final", (req, res) -> {
+            String fechaIdStr = req.queryParams("fecha_id");
+            String correo = req.session().attribute("currentUserUsername");
+            Alumno alumno = Alumno.findFirst("correo = ?", correo);
+
+            if (alumno != null && fechaIdStr != null && !fechaIdStr.isEmpty()) {
+                try {
+                    // Primero verificamos la fecha por seguridad (por si alguien intenta hackear el botón)
+                    List<Map> fechas = Base.findAll("SELECT fecha FROM fecha_examen WHERE id = ?", fechaIdStr);
+                    if (!fechas.isEmpty()) {
+                        String fechaStr = (String) fechas.get(0).get("fecha");
+                        java.time.LocalDate fechaExamenLD = java.time.LocalDate.parse(fechaStr);
+                        java.time.LocalDate hoy = java.time.LocalDate.now();
+                        long diasFaltantes = java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaExamenLD);
+
+                        if (diasFaltantes >= 2) {
+                            // Si todo está bien, lo borramos de la lista de asistencia
+                            Base.exec("DELETE FROM inscripcion_examen WHERE alumno_id = ? AND fecha_examen_id = ?", alumno.getId(), Integer.parseInt(fechaIdStr));
+                            res.redirect("/alumno/finales?message=Inscripcion+cancelada+exitosamente");
+                        } else {
+                            res.redirect("/alumno/finales?error=No+se+puede+cancelar+con+menos+de+48+horas+de+anticipacion");
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cancelar el final: " + e.getMessage());
+                    res.redirect("/alumno/finales?error=Error+interno+al+procesar+la+cancelacion");
                 }
             } else {
                 res.redirect("/alumno/finales?error=Datos+invalidos");
